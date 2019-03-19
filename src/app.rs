@@ -9,19 +9,20 @@ use conrod_core::widget::Widget;
 use piston::input::*;
 
 use crate::game::GameState;
+use std::collections::btree_set::BTreeSet;
+pub use piston::window::*;
 
 pub struct App<'font> {
     // OpenGL drawing backend.
     gl: GlGraphics,
     pub gui: GUI<'font>,
-    // Rotation for the square.
-   state: GameState,
+    state: GameState,
+    keys_down: BTreeSet<Key>,
 }
 
 impl<'font> App<'font> {
-
-    pub fn new(gl:GlGraphics, gui:GUI<'font>, state: GameState) -> Self {
-         App{gl,gui, state}
+    pub fn new(gl: GlGraphics, gui: GUI<'font>, state: GameState) -> Self {
+        App { gl, gui, state, keys_down: BTreeSet::new() }
     }
 
     pub fn render(&mut self, args: &RenderArgs) {
@@ -93,30 +94,56 @@ impl<'font> App<'font> {
         });
     }
 
-    pub fn input(&mut self, event: Input) {
-        use piston::input::{Input, Button, Key::*,ButtonArgs};
+    pub fn input<W: Window>(&mut self, event: Input, window: &mut W) {
+        use piston::input::{Input, Button, Key::*, ButtonArgs};
 
         match self.gui.visibility {
             GUIVisibility::HIDDEN | GUIVisibility::HUD => {
                 match event {
-                    Input::Button(ButtonArgs { button: Button::Keyboard(key), state,.. }) => {
-                        match key {
-                            Up => self.state.y_offset -= 0.5,
-                            Down => self.state.y_offset += 0.5,
-                            Left => self.state.x_offset -= 0.5,
-                            Right => self.state.x_offset += 0.5,
-                            Escape => self.gui.visibility = GUIVisibility::MENU,
-                            _ => {}
+                    Input::Button(ButtonArgs { button: Button::Keyboard(key), state, .. }) => {
+                        match (key, state) {
+                            (Escape, ButtonState::Release) => match self.gui.visibility {
+                                GUIVisibility::HUD => self.gui.visibility = GUIVisibility::MENU,
+                                GUIVisibility::HIDDEN => self.gui.visibility = GUIVisibility::HUD,
+                                _ => (),
+                            },
+                            (F1, ButtonState::Release) => {
+                                self.gui.visibility = GUIVisibility::HIDDEN;
+                            }
+                            _ => (),
                         }
+                        match state {
+                            ButtonState::Press => self.keys_down.insert(key),
+                            ButtonState::Release => self.keys_down.remove(&key),
+                        };
 
-                        //println!("{:?}",key);
+                        //println!("{:?}", key);
+
+                    }
+                    Input::Resize(..) => {
+                        if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event), self.gui.ui.win_w, self.gui.ui.win_h) {
+                            self.gui.ui.handle_event(cr_event)
+                        }
                     }
                     _other => {}
                 }
             }
             GUIVisibility::MENU | GUIVisibility::FULL => {
+                match event {
+                    Input::Button(ButtonArgs { button: Button::Keyboard(Escape), state: ButtonState::Release, .. }) => {
+                        match self.gui.visibility {
+                            GUIVisibility::MENU => self.gui.visibility = GUIVisibility::FULL,
+                            GUIVisibility::FULL => {
+                                self.gui.visibility = GUIVisibility::FULL;
+                                window.set_should_close(true);
+                            }
+                            _ => (),
+                        }
+                    }
+                    _ => (),
+                }
 
-                if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event),self.gui.ui.win_w,self.gui.ui.win_h) {
+                if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event), self.gui.ui.win_w, self.gui.ui.win_h) {
                     self.gui.ui.handle_event(cr_event)
                 }
             }
@@ -124,12 +151,26 @@ impl<'font> App<'font> {
     }
 
     pub fn update(&mut self, args: &UpdateArgs) {
-        // Rotate 2 radians per second.
+        use piston::input::{Key::*};
+
+// Rotate 2 radians per second.
         self.state.rotation += 8.0 * args.dt;
         let ui = &mut self.gui.ui.set_widgets();
 
+        for key in &self.keys_down {
+            match key {
+                Up => self.state.y_offset -= 0.5,
+                Down => self.state.y_offset += 0.5,
+                Left => self.state.x_offset -= 0.5,
+                Right => self.state.x_offset += 0.5,
+                _ => {}
+            }
+        }
 
-        //widget::Canvas::new().pad(30.0).scroll_kids_vertically().rgba(0.0,0.0,0.0,0.0).set(self.ids.canvas, ui);
-        widget::Text::new("Test").font_size(30).mid_top().set(self.gui.ids.title, ui);
+
+//widget::Canvas::new().pad(30.0).scroll_kids_vertically().rgba(0.0,0.0,0.0,0.0).set(self.ids.canvas, ui);
+        if self.gui.visibility != GUIVisibility::HIDDEN {
+            widget::Text::new(format!("{}", self.gui.visibility).as_str()).font_size(30).mid_top().set(self.gui.ids.title, ui);
+        }
     }
 }

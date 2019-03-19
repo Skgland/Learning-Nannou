@@ -14,7 +14,6 @@ use piston_window::PistonWindow;
 use conrod_core::widget_ids;
 use conrod_core::image::Map;
 
-
 mod gui;
 mod app;
 mod game;
@@ -22,6 +21,9 @@ mod game;
 use app::*;
 use gui::*;
 use crate::game::GameState;
+use conrod_core::Ui;
+use rusttype::gpu_cache::Cache;
+use opengl_graphics::Texture;
 
 extern crate find_folder;
 
@@ -33,29 +35,20 @@ widget_ids! {
     }
 }
 
+//
+//Initial Setting
+//
 
+// Change this to OpenGL::V2_1 if not working.
+
+const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
+const INIT_WIDTH: u32 = 200;
+const INIT_HEIGHT: u32 = 200;
 
 fn main() {
-    // Change this to OpenGL::V2_1 if not working.
-    let opengl = OpenGL::V3_2;
+    let mut window = createWindow();
 
-    struct Size { width: u32, height: u32 };
-    let init_size = Size { width: 200, height: 200 };
-
-    // Create an Glutin window.
-    let mut window: PistonWindow<glutin_window::GlutinWindow> = WindowSettings::new(
-        "spinning-square",
-        [init_size.width, init_size.height],
-    )
-        .opengl(opengl)
-        .exit_on_esc(true)
-        .vsync(true)
-        .build()
-        .unwrap();
-
-    //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([init_size.width as f64, init_size.height as f64])
-        .build();
+    let mut ui = createUi();
 
     // Add a `Font` to the `Ui`'s `font::Map` from file.
     let assets = find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap();
@@ -63,22 +56,8 @@ fn main() {
     ui.fonts.insert_from_file(font_path).unwrap();
 
 
-    // Create a texture to use for efficiently caching text on the GPU.
-    let text_vertex_data: Vec<u8> = Vec::new();
-    let (glyph_cache, text_texture_cache) = {
-        const SCALE_TOLERANCE: f32 = 0.1;
-        const POSITION_TOLERANCE: f32 = 0.1;
-        let cache = conrod_core::text::GlyphCache::builder()
-            .dimensions(init_size.width, init_size.height)
-            .scale_tolerance(SCALE_TOLERANCE)
-            .position_tolerance(POSITION_TOLERANCE)
-            .build();
-        let buffer_len = init_size.width as usize * init_size.height as usize;
-        let init = vec![128; buffer_len];
-        let settings = TextureSettings::new();
-        let texture = opengl_graphics::Texture::from_memory_alpha(&init, init_size.width, init_size.height, &settings).unwrap();
-        (cache, texture)
-    };
+    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = createTextCache(&());
+
 
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
     // In our case we have no image, however the macro may be used to list multiple.
@@ -90,7 +69,7 @@ fn main() {
 
     // Create a new game and run it.
     let mut app = App::new(
-        GlGraphics::new(opengl),
+        GlGraphics::new(OPEN_GL_VERSION),
         GUI {
             ui,
             text_vertex_data,
@@ -108,10 +87,53 @@ fn main() {
         e.render(|r| app.render(r));
 
         if let Event::Input(i) = e {
-            app.input(i);
+            app.input(i,&mut window);
         } else {
             e.update(|u| app.update(u));
-
         }
     }
+}
+
+struct TextCache<'font> {
+    text_vertex_data: Vec<u8>,
+    glyph_cache: Cache<'font>,
+    text_texture_cache: Texture,
+}
+
+fn createTextCache<'font>(_: &()) -> TextCache {
+    // Create a texture to use for efficiently caching text on the GPU.
+    let text_vertex_data: Vec<u8> = Vec::new();
+    let (glyph_cache, text_texture_cache) = {
+        const SCALE_TOLERANCE: f32 = 0.1;
+        const POSITION_TOLERANCE: f32 = 0.1;
+        let cache = conrod_core::text::GlyphCache::builder()
+            .dimensions(INIT_WIDTH, INIT_HEIGHT)
+            .scale_tolerance(SCALE_TOLERANCE)
+            .position_tolerance(POSITION_TOLERANCE)
+            .build();
+        let buffer_len = INIT_WIDTH as usize * INIT_HEIGHT as usize;
+        let init = vec![128; buffer_len];
+        let settings = TextureSettings::new();
+        let texture = opengl_graphics::Texture::from_memory_alpha(&init, INIT_WIDTH, INIT_HEIGHT, &settings).unwrap();
+        (cache, texture)
+    };
+    TextCache { text_vertex_data, glyph_cache, text_texture_cache }
+}
+
+fn createWindow() -> PistonWindow<glutin_window::GlutinWindow> {
+    // Create an Glutin window.
+    WindowSettings::new(
+        "spinning-square",
+        [INIT_WIDTH, INIT_HEIGHT],
+    ).opengl(OPEN_GL_VERSION)
+     .vsync(true)
+     .build()
+     .unwrap()
+}
+
+fn createUi() -> Ui {
+
+    //construct Ui
+    conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
+        .build()
 }

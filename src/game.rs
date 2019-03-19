@@ -8,6 +8,10 @@ pub struct GameState {
 
 impl  GameState {
     pub fn new() -> GameState {
-        GameState{rotation:0.0,x_offset:0.0,y_offset:0.0}
+        GameState{
+            // Rotation for the square.
+            rotation:0.0,
+            x_offset:0.0,
+            y_offset:0.0}
     }
 }

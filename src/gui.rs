@@ -2,8 +2,13 @@ use rusttype::gpu_cache::Cache;
 use conrod_core::image::Map;
 use conrod_core::Ui;
 use crate::Ids;
+use core::fmt::Display;
+use std::fmt::Formatter;
+use std::fmt::Error;
+use std::fmt::Debug;
 
 #[allow(dead_code)]
+#[derive(Debug,Eq,PartialEq)]
 pub enum GUIVisibility {
     //*NO GUI VISIBLE (ONLY GAME VISIBLE)
     HIDDEN,
@@ -13,6 +18,12 @@ pub enum GUIVisibility {
     MENU,
     //*ONLY MENU VISIBLE (NO GAME VISIBLE)
     FULL,
+}
+
+impl  Display for GUIVisibility {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        (self as &Debug).fmt(f)
+    }
 }
 
 pub struct GUI<'font> {
