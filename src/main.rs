@@ -23,6 +23,7 @@ use crate::game::GameState;
 use conrod_core::Ui;
 use rusttype::gpu_cache::Cache;
 use opengl_graphics::Texture;
+use glutin_window::GlutinWindow;
 
 extern crate find_folder;
 
@@ -39,46 +40,19 @@ const INIT_HEIGHT: u32 = 200;
 fn main() {
     let mut window = create_window();
 
-    let mut ui = create_ui();
+    let ui = create_ui();
 
-    // Add a `Font` to the `Ui`'s `font::Map` from file.
-    let assets = find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap();
-    let font_path = assets.join("fonts/NotoSans/NotoSans-Regular.ttf");
-    ui.fonts.insert_from_file(font_path).unwrap();
-
-
-    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
-
-
-    // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
-    // In our case we have no image, however the macro may be used to list multiple.
-    let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
-    // let rust_logo = image_map.insert(rust_logo);
-
-    // Instantiate the generated list of widget identifiers.
-    let ids = Ids::new(ui.widget_id_generator());
 
     // Create a new game and run it.
-    let mut app = App::new(
-        GlGraphics::new(OPEN_GL_VERSION),
-        GUI {
-            ui,
-            text_vertex_data,
-            ids,
-            glyph_cache,
-            image_map,
-            text_texture_cache,
-            visibility: GUIVisibility::HUD,
-        },
-        GameState::new(),
-    );
+    let mut app = create_app(ui);
 
     let mut events = Events::new(EventSettings::new());
+
     while let Some(e) = events.next(&mut window) {
         e.render(|r| app.render(r));
 
         if let Event::Input(i) = e {
-            app.input(i,&mut window);
+             app.input(i, &mut window);
         } else {
             e.update(|u| app.update(u));
         }
@@ -111,13 +85,14 @@ fn create_text_cache<'font>(_: &()) -> TextCache {
     TextCache { text_vertex_data, glyph_cache, text_texture_cache }
 }
 
-fn create_window() -> PistonWindow<glutin_window::GlutinWindow> {
+fn create_window() -> PistonWindow<GlutinWindow> {
     // Create an Glutin window.
     WindowSettings::new(
         "spinning-square",
         [INIT_WIDTH, INIT_HEIGHT],
     ).opengl(OPEN_GL_VERSION)
      .vsync(true)
+     .fullscreen(false)
      .build()
      .unwrap()
 }
@@ -125,6 +100,41 @@ fn create_window() -> PistonWindow<glutin_window::GlutinWindow> {
 fn create_ui() -> Ui {
 
     //construct Ui
-    conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
-        .build()
+    let mut ui = conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
+        .build();
+
+
+    // Add a `Font` to the `Ui`'s `font::Map` from file.
+    let assets = find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap();
+    let font_path = assets.join("fonts/NotoSans/NotoSans-Regular.ttf");
+    ui.fonts.insert_from_file(font_path).unwrap();
+    ui
+}
+
+fn create_app<'font>(mut ui: Ui) -> App<'font> {
+    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
+
+
+    // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
+    // In our case we have no image, however the macro may be used to list multiple.
+    let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
+    // let rust_logo = image_map.insert(rust_logo);
+
+    // Instantiate the generated list of widget identifiers.
+    let ids = Ids::new(ui.widget_id_generator());
+
+    App::new(
+        GlGraphics::new(OPEN_GL_VERSION),
+        GUI {
+            ui,
+            text_vertex_data,
+            ids,
+            glyph_cache,
+            image_map,
+            text_texture_cache,
+            active_menu: GUIVisibility::HUD,
+            fullscreen: false,
+        },
+        GameState::new(),
+    )
 }

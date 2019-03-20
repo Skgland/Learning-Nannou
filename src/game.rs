@@ -14,4 +14,8 @@ impl  GameState {
             x_offset:0.0,
             y_offset:0.0}
     }
+
+    pub fn handle_input(&self) -> () {
+
+    }
 }
