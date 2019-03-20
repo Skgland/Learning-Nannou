@@ -46,9 +46,9 @@ const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
 fn main() {
-    let mut window = createWindow();
+    let mut window = create_window();
 
-    let mut ui = createUi();
+    let mut ui = create_ui();
 
     // Add a `Font` to the `Ui`'s `font::Map` from file.
     let assets = find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap();
@@ -56,7 +56,7 @@ fn main() {
     ui.fonts.insert_from_file(font_path).unwrap();
 
 
-    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = createTextCache(&());
+    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
 
 
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
@@ -100,7 +100,7 @@ struct TextCache<'font> {
     text_texture_cache: Texture,
 }
 
-fn createTextCache<'font>(_: &()) -> TextCache {
+fn create_text_cache<'font>(_: &()) -> TextCache {
     // Create a texture to use for efficiently caching text on the GPU.
     let text_vertex_data: Vec<u8> = Vec::new();
     let (glyph_cache, text_texture_cache) = {
@@ -120,7 +120,7 @@ fn createTextCache<'font>(_: &()) -> TextCache {
     TextCache { text_vertex_data, glyph_cache, text_texture_cache }
 }
 
-fn createWindow() -> PistonWindow<glutin_window::GlutinWindow> {
+fn create_window() -> PistonWindow<glutin_window::GlutinWindow> {
     // Create an Glutin window.
     WindowSettings::new(
         "spinning-square",
@@ -131,7 +131,7 @@ fn createWindow() -> PistonWindow<glutin_window::GlutinWindow> {
      .unwrap()
 }
 
-fn createUi() -> Ui {
+fn create_ui() -> Ui {
 
     //construct Ui
     conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])

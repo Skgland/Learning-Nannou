@@ -1,5 +1,5 @@
 [package]
-name = "Learning-Conrod"
+name = "learning_conrod"
 version = "0.1.0"
 authors = ["BB20101997 <bb-github@t-online.de>"]
 edition = "2018"
