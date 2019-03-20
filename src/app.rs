@@ -1,16 +1,18 @@
+use std::collections::btree_set::BTreeSet;
+
 use conrod_core::input::RenderArgs;
-use opengl_graphics::GlGraphics;
-use crate::gui::GUI;
-use crate::gui::GUIVisibility;
-use conrod_core::widget;
 use conrod_core::position::Positionable;
-use piston_window::texture::UpdateTexture;
+use conrod_core::widget;
 use conrod_core::widget::Widget;
+use opengl_graphics::GlGraphics;
 use piston::input::*;
+pub use piston::window::*;
+use piston_window::texture::UpdateTexture;
+use conrod_core::Labelable;
 
 use crate::game::GameState;
-use std::collections::btree_set::BTreeSet;
-pub use piston::window::*;
+use crate::gui::GUI;
+use crate::gui::GUIVisibility;
 
 pub struct App<'font> {
     // OpenGL drawing backend.
@@ -29,6 +31,7 @@ impl<'font> App<'font> {
         use graphics::*;
 
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+        const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
         const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
         let square = rectangle::square(0.0, 0.0, 50.0);
@@ -42,7 +45,7 @@ impl<'font> App<'font> {
         fn texture_from_image<T>(img: &T) -> &T { img }
 
         let App {
-            gui: GUI { ui, text_vertex_data, text_texture_cache, glyph_cache, image_map, .. },
+            gui: GUI { ui, text_vertex_data, text_texture_cache, glyph_cache, image_map, visibility, .. },
             state: GameState {
                 x_offset,
                 y_offset,
@@ -70,17 +73,22 @@ impl<'font> App<'font> {
 
 
         gl.draw(args.viewport(), |c, gl| {
-            // Clear the screen.
-            clear(GREEN, gl);
+            if let GUIVisibility::HIDDEN | GUIVisibility::HUD = visibility {
 
-            let transform = c.transform.trans(x + *x_offset, y + *y_offset)
-                             .rot_rad(rotation)
-                             .trans(-25.0, -25.0);
+                // Clear the screen.
+                clear(GREEN, gl);
 
-            //println!("X-off {}, Y-off {}",*x_offset,*y_offset);
+                let transform = c.transform.trans(x + *x_offset, y + *y_offset)
+                    .rot_rad(rotation)
+                    .trans(-25.0, -25.0);
 
-            // Draw a box rotating around the middle of the screen.
-            rectangle(RED, square, transform, gl);
+                //println!("X-off {}, Y-off {}",*x_offset,*y_offset);
+
+                // Draw a box rotating around the middle of the screen.
+                rectangle(RED, square, transform, gl);
+            } else {
+                clear(BLUE, gl)
+            }
 
             conrod_piston::draw::primitives(ui.draw(),
                                             c,
@@ -118,7 +126,6 @@ impl<'font> App<'font> {
                         };
 
                         //println!("{:?}", key);
-
                     }
                     Input::Resize(..) => {
                         if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event), self.gui.ui.win_w, self.gui.ui.win_h) {
@@ -151,25 +158,34 @@ impl<'font> App<'font> {
     }
 
     pub fn update(&mut self, args: &UpdateArgs) {
-        use piston::input::{Key::*};
+        use piston::input::Key::*;
+        use GUIVisibility::*;
 
 // Rotate 2 radians per second.
         self.state.rotation += 8.0 * args.dt;
         let ui = &mut self.gui.ui.set_widgets();
 
-        for key in &self.keys_down {
-            match key {
-                Up => self.state.y_offset -= 0.5,
-                Down => self.state.y_offset += 0.5,
-                Left => self.state.x_offset -= 0.5,
-                Right => self.state.x_offset += 0.5,
-                _ => {}
+        if let HUD | HIDDEN = self.gui.visibility {
+            for key in &self.keys_down {
+                match key {
+                    Up => self.state.y_offset -= 0.5,
+                    Down => self.state.y_offset += 0.5,
+                    Left => self.state.x_offset -= 0.5,
+                    Right => self.state.x_offset += 0.5,
+                    _ => {}
+                }
             }
         }
 
 
+        match self.gui.visibility {
+            HIDDEN => (),
+            HUD => (),
+            MENU => {widget::Button::new().label("Continue").label_font_size(30).middle().set(self.gui.idthuns.pause_menu,ui);},
+            FULL => (),
+        }
 //widget::Canvas::new().pad(30.0).scroll_kids_vertically().rgba(0.0,0.0,0.0,0.0).set(self.ids.canvas, ui);
-        if self.gui.visibility != GUIVisibility::HIDDEN {
+        if let GUIVisibility::HIDDEN = self.gui.visibility {} else {
             widget::Text::new(format!("{}", self.gui.visibility).as_str()).font_size(30).mid_top().set(self.gui.ids.title, ui);
         }
     }

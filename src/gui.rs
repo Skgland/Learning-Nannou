@@ -1,14 +1,14 @@
 use rusttype::gpu_cache::Cache;
 use conrod_core::image::Map;
 use conrod_core::Ui;
-use crate::Ids;
 use core::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Error;
 use std::fmt::Debug;
+use conrod_core::widget_ids;
 
 #[allow(dead_code)]
-#[derive(Debug,Eq,PartialEq)]
+#[derive(Debug)]
 pub enum GUIVisibility {
     //*NO GUI VISIBLE (ONLY GAME VISIBLE)
     HIDDEN,
@@ -23,6 +23,15 @@ pub enum GUIVisibility {
 impl  Display for GUIVisibility {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         (self as &Debug).fmt(f)
+    }
+}
+
+// Generate a unique `WidgetId` for each widget.
+widget_ids! {
+    pub struct Ids {
+        canvas,
+        title,
+        pause_menu
     }
 }
 

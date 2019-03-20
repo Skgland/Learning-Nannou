@@ -11,7 +11,6 @@ use opengl_graphics::{GlGraphics, OpenGL};
 //use conrod_core::color::Colorable;
 use piston_window::TextureSettings;
 use piston_window::PistonWindow;
-use conrod_core::widget_ids;
 use conrod_core::image::Map;
 
 mod gui;
@@ -26,14 +25,6 @@ use rusttype::gpu_cache::Cache;
 use opengl_graphics::Texture;
 
 extern crate find_folder;
-
-// Generate a unique `WidgetId` for each widget.
-widget_ids! {
-    pub struct Ids {
-        canvas,
-        title,
-    }
-}
 
 //
 //Initial Setting
