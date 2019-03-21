@@ -171,6 +171,7 @@ impl<'font> App<'font> {
 
 
         match self.gui.active_menu {
+            //update game state while in game
             HUD | GameOnly => {
                 for key in &self.keys_down {
                     match key {
@@ -189,7 +190,8 @@ impl<'font> App<'font> {
         match self.gui.active_menu {
             GameOnly => (),
             HUD => (),
-            OverlayMenu(..) => { widget::Button::new().label("Continue").label_font_size(30).middle().set(self.gui.ids.pause_menu, ui); }
+            OverlayMenu(..) => {
+                widget::Button::new().label("Continue").label_font_size(30).middle().set(self.gui.ids.pause_menu, ui); }
             MenuOnly(..) => (),
         }
         //widget::Canvas::new().pad(30.0).scroll_kids_vertically().rgba(0.0,0.0,0.0,0.0).set(self.ids.canvas, ui);
