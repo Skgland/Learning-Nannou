@@ -19,7 +19,6 @@ mod game;
 
 use app::*;
 use gui::*;
-use crate::game::GameState;
 use conrod_core::Ui;
 use rusttype::gpu_cache::Cache;
 use opengl_graphics::Texture;
@@ -46,13 +45,17 @@ fn main() {
     // Create a new game and run it.
     let mut app = create_app(ui);
 
+    let mut context = create_render_context();
+
     let mut events = Events::new(EventSettings::new());
 
+
+
     while let Some(e) = events.next(&mut window) {
-        e.render(|r| app.render(r));
+        e.render(|r| app.render(&mut context, r));
 
         if let Event::Input(i) = e {
-             app.input(i, &mut window);
+            app.input(i, &mut window);
         } else {
             e.update(|u| app.update(u));
         }
@@ -111,8 +114,7 @@ fn create_ui() -> Ui {
     ui
 }
 
-fn create_app<'font>(mut ui: Ui) -> App<'font> {
-    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
+fn create_app(mut ui: Ui) -> App {
 
 
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
@@ -124,17 +126,23 @@ fn create_app<'font>(mut ui: Ui) -> App<'font> {
     let ids = Ids::new(ui.widget_id_generator());
 
     App::new(
-        GlGraphics::new(OPEN_GL_VERSION),
         GUI {
             ui,
-            text_vertex_data,
             ids,
-            glyph_cache,
             image_map,
-            text_texture_cache,
             active_menu: GUIVisibility::HUD,
             fullscreen: false,
         },
-        GameState::new(),
     )
+}
+
+fn create_render_context<'font>() -> RenderContext<'font>{
+    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
+    let gl = GlGraphics::new(OPEN_GL_VERSION);
+    RenderContext {
+        text_texture_cache,
+        glyph_cache,
+        text_vertex_data,
+        gl
+    }
 }

@@ -2,60 +2,48 @@ use std::collections::btree_set::BTreeSet;
 
 use conrod_core::input::RenderArgs;
 use conrod_core::position::Positionable;
+use conrod_core::color::Colorable;
+use conrod_core::Borderable;
 use conrod_core::widget;
 use conrod_core::widget::Widget;
 use opengl_graphics::GlGraphics;
 use piston::input::*;
 pub use piston::window::*;
 use piston_window::texture::UpdateTexture;
-use conrod_core::Labelable;
 
 use crate::game::GameState;
 use crate::gui::*;
 use piston_window::PistonWindow;
 use glutin_window::GlutinWindow;
+use graphics::Context;
 
-pub struct App<'font> {
-    // OpenGL drawing backend.
-    pub gl: GlGraphics,
-    pub gui: GUI<'font>,
-    state: GameState,
+pub struct App {
+    pub gui: GUI,
+    state: Option<GameState>,
     keys_down: BTreeSet<Key>,
 }
 
-impl<'font> App<'font> {
-    pub fn new(gl: GlGraphics, gui: GUI<'font>, state: GameState) -> Self {
-        App { gl, gui, state, keys_down: BTreeSet::new() }
+impl App {
+    pub fn new(gui: GUI) -> Self {
+        App { gui, state: None, keys_down: BTreeSet::new() }
     }
 
-    pub fn render(&mut self, args: &RenderArgs) {
+    pub fn render(&self, context: &mut RenderContext, args: &RenderArgs) {
         use graphics::*;
 
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
         const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
-        const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
-        let square = rectangle::square(0.0, 0.0, 50.0);
-        let rotation = self.state.rotation;
-        let (x, y) = (args.width / 2.0,
-                      args.height / 2.0);
 
 
         // Specify how to get the drawable texture from the image. In this case, the image
         // *is* the texture.
         fn texture_from_image<T>(img: &T) -> &T { img }
 
-        let App {
-            gui: GUI { ui, text_vertex_data, text_texture_cache, glyph_cache, image_map, active_menu, .. },
-            state: GameState {
-                x_offset,
-                y_offset,
-                ..
-            },
-            ..
-        } = self;
+        let RenderContext { gl, glyph_cache, text_texture_cache, text_vertex_data, .. } = context;
 
-        let gl = &mut self.gl;
+        let App { gui: GUI { ui, image_map, active_menu, .. }, .. } = self;
+
 
         // A function used for caching glyphs to the texture cache.
         let cache_queued_glyphs = |_graphics: &mut GlGraphics, cache: &mut opengl_graphics::Texture, rect: conrod_core::text::rt::Rect<u32>, data: &[u8]| {
@@ -71,21 +59,16 @@ impl<'font> App<'font> {
 
         gl.draw(args.viewport(), |c, gl| {
             match active_menu {
-                GUIVisibility::GameOnly | GUIVisibility::HUD => {
+                GUIVisibility::HUD | GUIVisibility::GameOnly => {
                     // Clear the screen.
                     clear(GREEN, gl);
-
-                    let transform = c.transform.trans(x + *x_offset, y + *y_offset).rot_rad(rotation).trans(-25.0, -25.0);
-
-                    //println!("X-off {}, Y-off {}",*x_offset,*y_offset);
-
-                    // Draw a box rotating around the middle of the screen.
-                    rectangle(RED, square, transform, gl);
                 }
                 _ => {
                     clear(BLUE, gl)
                 }
             }
+
+            self.render_game(args, c, gl);
 
             conrod_piston::draw::primitives(ui.draw(),
                                             c,
@@ -99,15 +82,43 @@ impl<'font> App<'font> {
         });
     }
 
+
+    fn render_game(&self, args: &RenderArgs, c: Context, gl: &mut GlGraphics) {
+        use graphics::*;
+
+        if let Some(state) = &self.state {
+            let GameState { x_offset, y_offset, rotation, .. } = state;
+
+            const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
+
+            let square = rectangle::square(0.0, 0.0, 50.0);
+
+            let rotation = rotation;
+            let (x, y) = (args.width / 2.0,
+                          args.height / 2.0);
+
+            let transform = c.transform.trans(x + *x_offset, y + *y_offset).rot_rad(*rotation).trans(-25.0, -25.0);
+
+
+            //println!("X-off {}, Y-off {}",*x_offset,*y_offset);
+
+            // Draw a box rotating around the middle of the screen.
+            rectangle(RED, square, transform, gl);
+        }
+    }
+
     pub fn input(&mut self, event: Input, window: &mut PistonWindow<GlutinWindow>) -> () {
         use piston::input::{Input, Button, Key::*, ButtonArgs};
         use crate::gui::MenuType;
 
         match (&self.gui.active_menu, event) {
             //Always pass Resize Events to Conrod
-            (GUIVisibility::HUD, event @ Input::Resize(..)) => {
+
+
+            (GUIVisibility::HUD, event @ Input::Resize(..)) |
+            (GUIVisibility::GameOnly, event @ Input::Resize(..)) => {
                 if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event), self.gui.ui.win_w, self.gui.ui.win_h) {
-                    self.gui.ui.handle_event(cr_event)
+                    self.gui.ui.handle_event(cr_event);
                 }
             }
             (_, Input::Button(ButtonArgs { button: Button::Keyboard(F11), state: ButtonState::Release, .. })) => {
@@ -129,7 +140,7 @@ impl<'font> App<'font> {
                 self.gui.active_menu = GUIVisibility::HUD
             }
             //This should move to Game Logic once separated
-            (GUIVisibility::HUD, Input::Button(ButtonArgs { button: Button::Keyboard(F1), state: ButtonState::Release, .. })) => {
+            (_, Input::Button(ButtonArgs { button: Button::Keyboard(F1), state: ButtonState::Release, .. })) => {
                 self.gui.active_menu = GUIVisibility::GameOnly
             }
             //In game Key Processing, may want to do this via Conrod as it tracks this in a maybe nicer way
@@ -157,7 +168,7 @@ impl<'font> App<'font> {
                     self.gui.ui.handle_event(cr_event)
                 }
             }
-            (_, _) => ()
+            (_, _) => (),
         };
     }
 
@@ -165,38 +176,41 @@ impl<'font> App<'font> {
         use piston::input::Key::*;
         use GUIVisibility::*;
 
-        // Rotate 2 radians per second.
-        self.state.rotation += 8.0 * args.dt;
         let ui = &mut self.gui.ui.set_widgets();
 
+        //necessary so that when we stop drawing anything in F1 mode, Resize events will still be processed
+        widget::canvas::Canvas::new().border_rgba(0.0, 0.0, 0.0, 0.0).rgba(0.0, 0.0, 0.0, 0.0).set(self.gui.ids.canvas, ui);
 
-        match self.gui.active_menu {
-            //update game state while in game
-            HUD | GameOnly => {
-                for key in &self.keys_down {
-                    match key {
-                        Up => self.state.y_offset -= 0.5,
-                        Down => self.state.y_offset += 0.5,
-                        Left => self.state.x_offset -= 0.5,
-                        Right => self.state.x_offset += 0.5,
-                        _ => {}
+        if let Some(state) = &mut self.state {
+            // Rotate 2 radians per second.
+            state.rotation += 8.0 * args.dt;
+
+
+            match self.gui.active_menu {
+                //update game state while in game
+                HUD | GameOnly => {
+                    for key in &self.keys_down {
+                        match key {
+                            Up => state.y_offset -= 0.5,
+                            Down => state.y_offset += 0.5,
+                            Left => state.x_offset -= 0.5,
+                            Right => state.x_offset += 0.5,
+                            _ => {}
+                        }
                     }
                 }
+                MenuOnly(..) | OverlayMenu(..) => {}
             }
-            MenuOnly(..) | OverlayMenu(..) => {}
         }
 
 
-        match self.gui.active_menu {
+        match &self.gui.active_menu {
             GameOnly => (),
-            HUD => (),
-            OverlayMenu(..) => {
-                widget::Button::new().label("Continue").label_font_size(30).middle().set(self.gui.ids.pause_menu, ui); }
-            MenuOnly(..) => (),
-        }
-        //widget::Canvas::new().pad(30.0).scroll_kids_vertically().rgba(0.0,0.0,0.0,0.0).set(self.ids.canvas, ui);
-        if let GUIVisibility::GameOnly = self.gui.active_menu {} else {
-            widget::Text::new(format!("{}", self.gui.active_menu).as_str()).font_size(30).mid_top().set(self.gui.ids.title, ui);
+            HUD => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.canvas).set(self.gui.ids.title, ui),
+            MenuOnly(menu)|
+            OverlayMenu(menu) => {
+                menu.update(ui,&self.gui.ids);
+            }
         }
     }
 }
