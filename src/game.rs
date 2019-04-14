@@ -158,7 +158,12 @@ impl  Serialize for Direction {
     }
 }
 
+
+use serde::de::Error;
+
 impl <'de>  Deserialize<'de> for Direction {
+
+
     fn deserialize<D>(deserializer: D) -> Result<Self,D::Error> where
         D: Deserializer<'de> {
         let int = u32::deserialize(deserializer)?;
@@ -166,7 +171,7 @@ impl <'de>  Deserialize<'de> for Direction {
         if let Ok(value) = Direction::try_from(int){
             Ok(value)
         }else{
-            unimplemented!()
+            Err(D::Error::custom("Invalid enum variant!"))
         }
     }
 }
