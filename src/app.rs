@@ -24,10 +24,12 @@ use crate::gui::GUIVisibility::OverlayMenu;
 use std::collections::btree_map::BTreeMap;
 use crate::game::TileTextureIndex;
 use opengl_graphics::Texture;
+use crate::game::LevelTemplate;
 
 pub struct App {
     pub gui: GUI,
     pub texture_map: BTreeMap<TileTextureIndex,Texture>,
+    pub level_list: Vec<LevelTemplate>,
     keys_down: BTreeSet<Key>,
 }
 
@@ -50,8 +52,8 @@ impl Action {
 }
 
 impl App {
-    pub fn new(gui: GUI, texture_map: BTreeMap<TileTextureIndex,Texture>) -> Self {
-        App { gui, keys_down: BTreeSet::new(), texture_map }
+    pub fn new(gui: GUI, texture_map: BTreeMap<TileTextureIndex,Texture>, level_list:Vec<LevelTemplate>) -> Self {
+        App { gui, keys_down: BTreeSet::new(), texture_map , level_list}
     }
 
     pub fn render(&self, context: &mut RenderContext, args: &RenderArgs) {
@@ -197,7 +199,7 @@ impl App {
         }
 
         //necessary so that when we stop drawing anything in F1 mode, Resize events will still be processed
-        widget::canvas::Canvas::new().border_rgba(0.0, 0.0, 0.0, 0.0).rgba(0.0, 0.0, 0.0, 0.0).set(self.gui.ids.canvas, ui);
+        widget::canvas::Canvas::new().border_rgba(0.0, 0.0, 0.0, 0.0).rgba(0.0, 0.0, 0.0, 0.0).set(self.gui.ids.main_canvas, ui);
 
         // Rotate 2 radians per second.
 
@@ -222,7 +224,7 @@ impl App {
 
         match &self.gui.active_menu {
             GameOnly(_) => (),
-            HUD(_) => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.canvas).set(self.gui.ids.title, ui),
+            HUD(_) => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.main_canvas).set(self.gui.ids.menu_title, ui),
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
                 if let Some(menu) = menu.update(ui, &mut self.gui.ids) {

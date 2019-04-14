@@ -1,15 +1,21 @@
 #![allow(dead_code, unused_variables)]
 
 use std::collections::btree_map::BTreeMap;
-use graphics::Graphics;
-use conrod_core::image::Id;
-use conrod_core::image::Map;
-use graphics::Context;
-use graphics::ImageSize;
-use graphics::rectangle;
+use graphics::{
+    Context,
+    Graphics,
+    ImageSize,
+    rectangle,
+};
 use piston_window::Transformed;
+use serde::{
+    Serialize,
+    Deserialize,
+};
+use serde::Serializer;
+use serde::Deserializer;
+use std::convert::TryFrom;
 
-pub mod input_handling;
 
 pub mod color {
     pub type Color = [f32; 4];
@@ -28,7 +34,7 @@ pub struct PlayerCoordinate {
     pub y: f64,
 }
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Clone)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct ObjectCoordinate {
     pub x: i64,
     pub y: i64,
@@ -46,16 +52,55 @@ pub struct GameState {
     pub level_state: LevelState,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LevelTemplate {
     pub name: String,
     pub init_state: LevelState,
-    pub start_position: PlayerCoordinate,
 }
+
 
 #[derive(Clone)]
 pub struct LevelState {
     pub tile_map: BTreeMap<ObjectCoordinate, TileType>
+}
+
+impl Serialize for LevelState {
+    fn serialize<S>(&self,serializer: S) -> Result<S::Ok, S::Error> where
+        S: Serializer {
+        let map = self.tile_map.iter().flat_map(
+            |(key, value)| {
+                let mut  tmp = String::new();
+                let mut tmp_ser = toml::Serializer::new(&mut tmp);
+                if let Ok(()) = key.serialize(&mut tmp_ser){
+                    Some((tmp, value))
+                }else{
+                    None
+                }
+
+            });
+        serializer.collect_map(map)
+    }
+}
+
+impl <'de> Deserialize<'de> for LevelState {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+
+        let map : BTreeMap<String,TileType>= BTreeMap::deserialize( deserializer)?;
+
+        let map = map.iter().flat_map(
+            |(key,value)| {
+
+                let mut tmp_des = toml::de::Deserializer::new(key.as_str());
+                if let Ok(result) = ObjectCoordinate::deserialize(&mut tmp_des){
+                    Some((result, value.clone()))
+                }else{
+                    None
+                }
+
+        }).collect::<BTreeMap<ObjectCoordinate,TileType>>();
+
+        Ok(LevelState{tile_map: map})
+    }
 }
 
 
@@ -88,6 +133,45 @@ pub enum Direction {
     WEST,
 }
 
+impl TryFrom<u32> for Direction {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+
+
+        Ok (match value {
+            0 => Direction::UP,
+            1 => Direction::DOWN,
+            2 => Direction::NORTH,
+            3 => Direction::EAST,
+            4 => Direction::SOUTH,
+            5 => Direction::WEST,
+            _ => return Err(())
+        })
+    }
+}
+
+impl  Serialize for Direction {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok,S::Error> where
+        S: Serializer {
+        (*self as u32).serialize(serializer)
+    }
+}
+
+impl <'de>  Deserialize<'de> for Direction {
+    fn deserialize<D>(deserializer: D) -> Result<Self,D::Error> where
+        D: Deserializer<'de> {
+        let int = u32::deserialize(deserializer)?;
+
+        if let Ok(value) = Direction::try_from(int){
+            Ok(value)
+        }else{
+            unimplemented!()
+        }
+    }
+}
+
+
 impl Direction {
     pub fn inverted(&self) -> Self {
         use self::Direction::*;
@@ -107,18 +191,18 @@ pub const PLAYER_SIZE: f64 = 45.0;
 const PLAYER_SQUARE: graphics::types::Rectangle = [0.0, 0.0, PLAYER_SIZE, PLAYER_SIZE];
 const PLAYER_COLOR: color::Color = color::RED;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Connections { pub up: bool, pub down: bool, pub left: bool, pub right: bool }
 
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub enum GateVisibility {
     Visible,
     Hidden(Box<TileType>),
 }
 
 
-#[derive(Clone)]
+#[derive(Clone,Serialize, Deserialize)]
 pub enum TileType {
     Wall(Connections),
     Path,
@@ -163,16 +247,11 @@ impl TileType {
         let adjusted = context.trans((coord.x as f64) * TILE_SIZE - state.position.x - TILE_SIZE / 2.0,
                                      (coord.y as f64) * TILE_SIZE - state.position.y - TILE_SIZE / 2.0);
 
-        match self {
-            TileType::Start |
-            TileType::Path |
-            TileType::Wall(_) |
-            TileType::Goal { .. } => {
-                let texture = texture_map.get(&self.tile_texture_id()).unwrap();
-                let transform = adjusted.scale(TILE_SIZE / texture.get_width() as f64, TILE_SIZE / texture.get_height() as f64).transform;
-                image(texture, transform, gl)
-            }
-            _ => rectangle(D_RED, rect, adjusted.transform, gl),
+        if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
+            let transform = adjusted.scale(TILE_SIZE / texture.get_width() as f64, TILE_SIZE / texture.get_height() as f64).transform;
+            image(texture, transform, gl)
+        } else {
+            rectangle(D_RED, rect, adjusted.transform, gl)
         }
     }
 

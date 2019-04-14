@@ -27,6 +27,15 @@ use crate::gui::MenuType::LevelSelect;
 use crate::game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
 use crate::game::Connections;
+use crate::game::LevelTemplate;
+use toml::Deserializer;
+use std::fs::File;
+use std::io::Read;
+use serde::ser::Serialize;
+use toml::ser::Error::Custom;
+use std::io::Write;
+use std::path::PathBuf;
+use toml::ser::Error;
 
 extern crate find_folder;
 
@@ -40,17 +49,25 @@ const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
-fn main() {
+fn main() -> Result<(), Error> {
     let mut window = create_window();
 
     let ui = create_ui();
 
+    println!("Writing test level to disc!");
+    save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level())?;
 
+
+    println!("Construction app!");
     // Create a new game and run it.
     let mut app = create_app(ui);
 
+
+    println!("Creating render Context!");
     let mut context = create_render_context();
 
+
+    println!("Creating event loop iterator");
     let mut events = Events::new(EventSettings::new());
 
 
@@ -63,6 +80,8 @@ fn main() {
             e.update(|u| app.update(u, &mut window));
         }
     }
+
+    Ok(())
 }
 
 struct TextCache<'font> {
@@ -103,6 +122,10 @@ fn create_window() -> PistonWindow<GlutinWindow> {
      .unwrap()
 }
 
+fn get_asset_path() -> PathBuf {
+    find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap()
+}
+
 fn create_ui() -> Ui {
 
     //construct Ui
@@ -111,19 +134,100 @@ fn create_ui() -> Ui {
 
 
     // Add a `Font` to the `Ui`'s `font::Map` from file.
-    let assets = find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap();
+    let assets = get_asset_path();
     let font_path = assets.join("fonts/NotoSans/NotoSans-Regular.ttf");
     ui.fonts.insert_from_file(font_path).unwrap();
     ui
 }
 
-type ImageMap = std::collections::btree_map::BTreeMap<TileTextureIndex, Texture>;
+type TextureMap = std::collections::btree_map::BTreeMap<TileTextureIndex, Texture>;
 
-fn load_texture(name: &str) -> Texture {
-    let assets = find_folder::Search::ParentsThenKids(5, 3).for_folder("assets").unwrap();
+fn load_levels() -> Vec<LevelTemplate> {
+    let assets = get_asset_path();
+    let path = assets.join("levels");
+    let mut levels = vec![];
+    if let Ok(dir) = path.read_dir() {
+        for entry in dir {
+            if let Ok(entry) = entry {
+                if let Ok(f_type) = entry.file_type() {
+                    if f_type.is_file() {
+                        if let Ok(level) = load_level(entry.path().as_path()) {
+                            levels.push(level);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        eprintln!("Expected assets/levels to be a folder, but it wasn't!");
+    }
+    levels
+}
+
+fn load_level(path: &std::path::Path) -> Result<LevelTemplate, toml::de::Error> {
+    let mut content = vec![];
+
+    use serde::Deserialize;
+    use game::*;
+
+    if let Err(_) = File::open(path).unwrap().read_to_end(&mut content) {
+        return toml::de::from_str("Failed to read File!");
+    };
+
+    let smthg = String::from_utf8_lossy(content.as_slice()).to_string();
+    let mut des = Deserializer::new(smthg.as_str());
+
+    LevelTemplate::deserialize(&mut des)
+}
+
+fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml::ser::Error> {
+    let mut out = String::new();
+
+    let mut serializer = toml::ser::Serializer::new(&mut out);
+
+    level.serialize(&mut serializer)?;
+
+    if let Ok(mut file) = File::create(path) {
+        if let Err(_) = file.write_all(out.as_bytes()) {
+            Err(Custom("Failed to write to file!".to_string()))
+        } else {
+            Ok(())
+        }
+    } else {
+        Err(Custom("Failed to write to File!".to_string()))
+    }
+}
+
+fn load_textures(texture_map: &mut TextureMap) -> () {
+    load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Goal { active: false }, "goal.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Start, "start.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Path, "path.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: true }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: false }), "wall.png");
+    load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: true }), "wall.png");
+}
+
+fn load_texture_into_map(texture_map: &mut TextureMap, key: TileTextureIndex, name: &str) -> () {
+    let assets = get_asset_path();
     let path = assets.join("textures").join(name);
     let settings = TextureSettings::new();
-    Texture::from_path(&path, &settings).unwrap()
+    if let Ok(texture) = Texture::from_path(&path, &settings) {
+        texture_map.insert(key, texture);
+    }
 }
 
 fn create_app(mut ui: Ui) -> App {
@@ -134,32 +238,14 @@ fn create_app(mut ui: Ui) -> App {
 
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
     // In our case we have no image, however the macro may be used to list multiple.
-    let mut image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
+    let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
     //let test_texture = image_map.insert(test_texture);
 
-    let mut texture_map: BTreeMap<TileTextureIndex, Texture> = BTreeMap::new();
+    let mut texture_map: TextureMap = BTreeMap::new();
 
+    load_textures(&mut texture_map);
 
-    texture_map.insert(TileTextureIndex::Goal { active: true }, load_texture("goal.png"));
-    texture_map.insert(TileTextureIndex::Goal { active: false }, load_texture("goal.png"));
-    texture_map.insert(TileTextureIndex::Start, load_texture("start.png"));
-    texture_map.insert(TileTextureIndex::Path, load_texture("path.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: true }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: false }), load_texture("wall.png"));
-    texture_map.insert(TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: true }), load_texture("wall.png"));
+    let level_list = load_levels();
 
     // Instantiate the generated list of widget identifiers.
     let generator = ui.widget_id_generator();
@@ -173,7 +259,7 @@ fn create_app(mut ui: Ui) -> App {
             image_map,
             active_menu: GUIVisibility::MenuOnly(LevelSelect),
             fullscreen: false,
-        }, texture_map,
+        }, texture_map, level_list,
     )
 }
 

@@ -20,7 +20,6 @@ use glutin_window::GlutinWindow;
 use piston::window::Window;
 use crate::game::GameState;
 use crate::game::LevelTemplate;
-use crate::game::PlayerCoordinate;
 use std::collections::btree_map::BTreeMap;
 use crate::game::LevelState;
 use crate::game::ObjectCoordinate;
@@ -33,13 +32,15 @@ use crate::game::Connections;
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
     pub struct Ids {
-        canvas,
-        title,
-        contiue,
-        level_select[],
-        options,
-        back,
-        quit,
+        main_canvas,
+        menu_title,
+        level_buttons[],
+        level_selection_button,
+        editor_button,
+        contiue_button,
+        options_button,
+        back_button,
+        quit_button,
     }
 }
 
@@ -101,8 +102,8 @@ impl GUIVisibility {
             GUIVisibility::HUD(state) => {
                 *self = GUIVisibility::OverlayMenu(MenuType::Pause, state.clone())
             }
-            GUIVisibility::MenuOnly(menu_type)|
-                GUIVisibility::OverlayMenu(menu_type, _) => {
+            GUIVisibility::MenuOnly(menu_type) |
+            GUIVisibility::OverlayMenu(menu_type, _) => {
                 let menu = menu_type.back();
                 if let Some(menu) = menu {
                     *self = menu
@@ -112,7 +113,6 @@ impl GUIVisibility {
             }
         }
     }
-
 }
 
 impl Display for GUIVisibility {
@@ -129,7 +129,6 @@ pub enum MenuType {
     LevelSelect,
     Custom(Box<dyn Menu>),
 }
-
 
 
 impl Display for MenuType {
@@ -171,42 +170,30 @@ impl Menu for MenuType {
         match self {
             MenuType::Custom(menu) => return menu.update(ui, ids),
             MenuType::Pause => {
-                widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.canvas).set(ids.title, ui);
+                widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
                                      .label_font_size(30)
-                                     .middle_of(ids.canvas)
-                                     .padded_kid_area_wh_of(ids.canvas, ui.win_h / 4.0)
-                                     .set(ids.contiue, ui);
+                                     .middle_of(ids.main_canvas)
+                                     .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
+                                     .set(ids.contiue_button, ui);
             }
             MenuType::LevelSelect => {
-                widget::Text::new("Level Selection").font_size(30).mid_top_of(ids.canvas).set(ids.title, ui);
+                widget::Text::new("Level Selection").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
 
-                ids.level_select.resize(1, &mut ui.widget_id_generator());
+                ids.level_buttons.resize(1, &mut ui.widget_id_generator());
 
-                let clicked = widget::Button::new().label("Test").mid_bottom_of(ids.canvas).set(ids.level_select[0], ui);
+                let clicked = widget::Button::new().label("Test").mid_bottom_of(ids.main_canvas).set(ids.level_buttons[0], ui);
                 if clicked.was_clicked() {
-                    let mut tile_map = BTreeMap::new();
-                    tile_map.insert(ObjectCoordinate { x: 0, y: 0 }, TileType::Start);
-                    tile_map.insert(ObjectCoordinate { x: 0, y: 1 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 1, y: 1 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 2, y: 1 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 2, y: 2 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 2, y: 3 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 1, y: 3 }, TileType::Path);
-                    tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall(Connections{up:false,down:false,left:true,right:true}));
-                    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: true, right: false }));
-                    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: false, right: true }));
-                    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
-
-
-                    let state = GameState::new(LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map }, start_position: PlayerCoordinate { x: 0.0, y: 0.0 } });
+                    let state = GameState::new(test_level());
 
                     return Some(HUD(state));
                 }
             }
 
-            MenuType::Main =>
-                widget::Text::new("Main Menu").font_size(30).mid_top_of(ids.canvas).set(ids.title, ui),
+            MenuType::Main => {
+                widget::Button::new().label("Level Editor").middle_of(ids.main_canvas).set(ids.editor_button, ui);
+                widget::Text::new("Main Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
+            }
         }
         None
     }
@@ -221,5 +208,18 @@ impl Menu for MenuType {
     }
 }
 
-
-
+pub fn test_level() -> LevelTemplate {
+    let mut tile_map = BTreeMap::new();
+    tile_map.insert(ObjectCoordinate { x: 0, y: 0 }, TileType::Start);
+    tile_map.insert(ObjectCoordinate { x: 0, y: 1 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 1, y: 1 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 2, y: 1 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 2, y: 2 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 2, y: 3 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 1, y: 3 }, TileType::Path);
+    tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: true, right: true }));
+    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: true, right: false }));
+    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: false, right: true }));
+    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
+    LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map } }
+}
