@@ -65,41 +65,37 @@ pub struct LevelState {
 }
 
 impl Serialize for LevelState {
-    fn serialize<S>(&self,serializer: S) -> Result<S::Ok, S::Error> where
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where
         S: Serializer {
         let map = self.tile_map.iter().flat_map(
             |(key, value)| {
-                let mut  tmp = String::new();
+                let mut tmp = String::new();
                 let mut tmp_ser = toml::Serializer::new(&mut tmp);
-                if let Ok(()) = key.serialize(&mut tmp_ser){
+                if let Ok(()) = key.serialize(&mut tmp_ser) {
                     Some((tmp, value))
-                }else{
+                } else {
                     None
                 }
-
             });
         serializer.collect_map(map)
     }
 }
 
-impl <'de> Deserialize<'de> for LevelState {
+impl<'de> Deserialize<'de> for LevelState {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-
-        let map : BTreeMap<String,TileType>= BTreeMap::deserialize( deserializer)?;
+        let map: BTreeMap<String, TileType> = BTreeMap::deserialize(deserializer)?;
 
         let map = map.iter().flat_map(
-            |(key,value)| {
-
+            |(key, value)| {
                 let mut tmp_des = toml::de::Deserializer::new(key.as_str());
-                if let Ok(result) = ObjectCoordinate::deserialize(&mut tmp_des){
+                if let Ok(result) = ObjectCoordinate::deserialize(&mut tmp_des) {
                     Some((result, value.clone()))
-                }else{
+                } else {
                     None
                 }
+            }).collect::<BTreeMap<ObjectCoordinate, TileType>>();
 
-        }).collect::<BTreeMap<ObjectCoordinate,TileType>>();
-
-        Ok(LevelState{tile_map: map})
+        Ok(LevelState { tile_map: map })
     }
 }
 
@@ -123,7 +119,7 @@ impl GameState {
     }
 }
 
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq,Debug)]
 pub enum Direction {
     UP,
     DOWN,
@@ -133,44 +129,64 @@ pub enum Direction {
     WEST,
 }
 
-impl TryFrom<u32> for Direction {
+impl Into<&'static str> for Direction {
+    fn into(self) -> &'static str {
+        match self {
+            Direction::DOWN => Direction::DOWN_NAME,
+            Direction::UP => Direction::UP_NAME,
+            Direction::WEST => Direction::WEST_NAME,
+            Direction::EAST => Direction::EAST_NAME,
+            Direction::NORTH => Direction::NORTH_NAME,
+            Direction::SOUTH => Direction::SOUTH_NAME,
+        }
+    }
+}
+
+impl TryFrom<String> for Direction {
     type Error = ();
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-
-
-        Ok (match value {
-            0 => Direction::UP,
-            1 => Direction::DOWN,
-            2 => Direction::NORTH,
-            3 => Direction::EAST,
-            4 => Direction::SOUTH,
-            5 => Direction::WEST,
-            _ => return Err(())
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(match value.as_str() {
+            Direction::DOWN_NAME => Direction::DOWN,
+            Direction::UP_NAME => Direction::UP,
+            Direction::SOUTH_NAME => Direction::SOUTH,
+            Direction::NORTH_NAME => Direction::NORTH,
+            Direction::EAST_NAME => Direction::EAST,
+            Direction::WEST_NAME => Direction::WEST,
+            _ => return Err(()),
         })
     }
 }
 
-impl  Serialize for Direction {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok,S::Error> where
+impl Serialize for Direction {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where
         S: Serializer {
-        (*self as u32).serialize(serializer)
+        let value : &str = Self::into(*self);
+        value.serialize(serializer)
+    }
+}
+
+#[test]
+fn test_into_from() {
+    for dir in vec![Direction::UP,Direction::DOWN,Direction::SOUTH,Direction::NORTH,Direction::EAST,Direction::WEST] {
+        let expected = Ok(dir);
+        let into_str : &str = Direction::into(dir);
+        let try_from = Direction::try_from(String::from(into_str));
+        assert_eq!(expected, try_from);
     }
 }
 
 
 use serde::de::Error;
 
-impl <'de>  Deserialize<'de> for Direction {
-
-
-    fn deserialize<D>(deserializer: D) -> Result<Self,D::Error> where
+impl<'de> Deserialize<'de> for Direction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where
         D: Deserializer<'de> {
-        let int = u32::deserialize(deserializer)?;
+        let value = String::deserialize(deserializer)?;
 
-        if let Ok(value) = Direction::try_from(int){
+        if let Ok(value) = Direction::try_from(value) {
             Ok(value)
-        }else{
+        } else {
             Err(D::Error::custom("Invalid enum variant!"))
         }
     }
@@ -178,6 +194,13 @@ impl <'de>  Deserialize<'de> for Direction {
 
 
 impl Direction {
+    const UP_NAME: &'static str = "UP";
+    const DOWN_NAME: &'static str = "DOWN";
+    const EAST_NAME: &'static str = "EAST";
+    const WEST_NAME: &'static str = "WEST";
+    const NORTH_NAME: &'static str = "NORTH";
+    const SOUTH_NAME: &'static str = "SOUTH";
+
     pub fn inverted(&self) -> Self {
         use self::Direction::*;
         match self {
@@ -207,7 +230,7 @@ pub enum GateVisibility {
 }
 
 
-#[derive(Clone,Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum TileType {
     Wall(Connections),
     Path,
