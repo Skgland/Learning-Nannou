@@ -55,8 +55,9 @@ fn main() -> Result<(), Error> {
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-    save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level())?;
-
+   if false {
+       save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level())?;
+   }
 
     println!("Construction app!");
     // Create a new game and run it.
