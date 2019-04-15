@@ -1,34 +1,36 @@
-#![allow(dead_code,unused_variables)]
+#![allow(dead_code, unused_variables)]
 
 use std::collections::btree_set::BTreeSet;
 
-use conrod_core::input::RenderArgs;
-use conrod_core::position::Positionable;
-use conrod_core::color::Colorable;
-use conrod_core::Borderable;
-use conrod_core::widget;
-use conrod_core::widget::Widget;
-use opengl_graphics::GlGraphics;
+use crate::{
+    gui::*,
+    gui::GUIVisibility::HUD,
+    gui::GUIVisibility::GameOnly,
+    gui::GUIVisibility::OverlayMenu,
+    game::GameState,
+    game::TileTextureIndex,
+    game::LevelTemplate,
+};
+use conrod_core::{
+    Borderable,
+    color::Colorable,
+    position::Positionable,
+    input::RenderArgs,
+    widget,
+    widget::Widget,
+};
+
+use opengl_graphics::{GlGraphics, Texture};
 use piston::input::*;
 pub use piston::window::*;
-use piston_window::texture::UpdateTexture;
-
-use crate::game::GameState;
-use crate::gui::*;
-use piston_window::PistonWindow;
+use piston_window::{texture::UpdateTexture, PistonWindow};
 use glutin_window::GlutinWindow;
 use graphics::Context;
-use crate::gui::GUIVisibility::HUD;
-use crate::gui::GUIVisibility::GameOnly;
-use crate::gui::GUIVisibility::OverlayMenu;
 use std::collections::btree_map::BTreeMap;
-use crate::game::TileTextureIndex;
-use opengl_graphics::Texture;
-use crate::game::LevelTemplate;
 
 pub struct App {
     pub gui: GUI,
-    pub texture_map: BTreeMap<TileTextureIndex,Texture>,
+    pub texture_map: BTreeMap<TileTextureIndex, Texture>,
     pub level_list: Vec<LevelTemplate>,
     keys_down: BTreeSet<Key>,
 }
@@ -52,8 +54,8 @@ impl Action {
 }
 
 impl App {
-    pub fn new(gui: GUI, texture_map: BTreeMap<TileTextureIndex,Texture>, level_list:Vec<LevelTemplate>) -> Self {
-        App { gui, keys_down: BTreeSet::new(), texture_map , level_list}
+    pub fn new(gui: GUI, texture_map: BTreeMap<TileTextureIndex, Texture>, level_list: Vec<LevelTemplate>) -> Self {
+        App { gui, keys_down: BTreeSet::new(), texture_map, level_list }
     }
 
     pub fn render(&self, context: &mut RenderContext, args: &RenderArgs) {
@@ -117,13 +119,13 @@ impl App {
     fn render_game(&self, args: &RenderArgs, c: Context, gl: &mut GlGraphics) {
         if
         let HUD(state)
-        |GameOnly(state)| OverlayMenu(_, state) = &self.gui.active_menu {
-            let GameState {  level_state, .. } = &state;
+        | GameOnly(state) | OverlayMenu(_, state) = &self.gui.active_menu {
+            let GameState { level_state, .. } = &state;
 
             let (x, y) = (args.width / 2.0,
                           args.height / 2.0);
 
-            let c = c.trans(x,y);
+            let c = c.trans(x, y);
 
 
             for (coord, tile) in &level_state.tile_map {
@@ -133,15 +135,12 @@ impl App {
             // Draw a box rotating around the middle of the screen.
 
             state.draw_player(c, gl, &self.texture_map);
-
         }
 
         use graphics::*;
     }
 
     pub fn input(&mut self, event: Input, window: &mut PistonWindow<GlutinWindow>) -> () {
-        use piston::input::{Input, Button, ButtonArgs};
-
         if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event.clone()), self.gui.ui.win_w, self.gui.ui.win_h) {
             self.gui.ui.handle_event(cr_event);
         }
