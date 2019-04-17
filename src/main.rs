@@ -35,7 +35,6 @@ use serde::ser::Serialize;
 use toml::ser::Error::Custom;
 use std::io::Write;
 use std::path::PathBuf;
-use toml::ser::Error;
 
 extern crate find_folder;
 
@@ -49,14 +48,16 @@ const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), toml::ser::Error> {
     let mut window = create_window();
 
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-   if false {
-       save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level())?;
+   if true {
+       if let Err(e) =  save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
+           eprintln!("{}",e);
+       }
    }
 
     println!("Construction app!");

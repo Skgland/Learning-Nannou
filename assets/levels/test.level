@@ -1,0 +1,49 @@
+name = "Test"
+[init_state."x = -1\ny = 2\n"]
+Variant = "Wall"
+[init_state."x = -1\ny = 2\n".Content.connections]
+up = false
+down = false
+left = false
+right = true
+
+[init_state."x = 0\ny = 0\n"]
+Variant = "Start"
+
+[init_state."x = 0\ny = 1\n"]
+Variant = "Path"
+
+[init_state."x = 0\ny = 2\n"]
+Variant = "Wall"
+[init_state."x = 0\ny = 2\n".Content.connections]
+up = false
+down = false
+left = true
+right = true
+
+[init_state."x = 0\ny = 3\n"]
+Variant = "Goal"
+Content = true
+
+[init_state."x = 1\ny = 1\n"]
+Variant = "Path"
+
+[init_state."x = 1\ny = 2\n"]
+Variant = "Wall"
+[init_state."x = 1\ny = 2\n".Content.connections]
+up = false
+down = false
+left = true
+right = false
+
+[init_state."x = 1\ny = 3\n"]
+Variant = "Path"
+
+[init_state."x = 2\ny = 1\n"]
+Variant = "Path"
+
+[init_state."x = 2\ny = 2\n"]
+Variant = "Path"
+
+[init_state."x = 2\ny = 3\n"]
+Variant = "Path"
