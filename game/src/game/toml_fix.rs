@@ -1,10 +1,10 @@
 use super::level::*;
 use super::ObjectCoordinate;
 use std::collections::btree_map::BTreeMap;
-use std::convert::TryFrom;
+//use std::convert::TryFrom;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
-mod direction_fix {
+/*mod direction_fix {
     use super::*;
 
     pub const UP_NAME: &'static str = "UP";
@@ -83,7 +83,7 @@ mod direction_fix {
             }
         }
     }
-}
+}*/
 
 mod level_state_fix {
     use super::*;
@@ -125,6 +125,7 @@ mod level_state_fix {
     }
 }
 
+/*
 mod wall_type_fix {
     use serde::Serialize;
     use crate::game::level::WallType;
@@ -241,4 +242,4 @@ mod tile_type_fix {
 
         }
     }
-}
+}*/

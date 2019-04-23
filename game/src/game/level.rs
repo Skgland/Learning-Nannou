@@ -1,4 +1,6 @@
 use super::*;
+use ::toml_fix::*;
+
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LevelTemplate {
@@ -13,7 +15,7 @@ pub struct LevelState {
 }
 
 
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq,Debug)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq,Debug,TomlFix)]
 pub enum Direction {
     UP,
     DOWN,
@@ -39,25 +41,25 @@ impl Direction {
     }
 }
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy,TomlFix)]
 pub enum NorthSouthAxis {
     North,
     South
 }
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy,TomlFix)]
 pub enum EastWestAxis {
     East,
     West
 }
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy,TomlFix)]
 pub enum Orientation {
     Horizontal,
     Vertical
 }
 
-#[derive(Ord,PartialOrd, PartialEq,Eq,Clone,Copy)]
+#[derive(Ord,PartialOrd, PartialEq,Eq,Clone,Copy,TomlFix)]
 pub enum WallType{
     Single{facing:Direction},
     Wall{orientation:Orientation},
@@ -67,7 +69,7 @@ pub enum WallType{
 }
 
 
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Ord, PartialOrd, Eq, PartialEq,TomlFix)]
 pub enum TileTextureIndex {
     TileMap,
     Wall{kind:WallType},
@@ -80,14 +82,14 @@ pub enum TileTextureIndex {
     Button { pressed: bool },
 }
 
-#[derive(Clone)]
+#[derive(Clone,TomlFix)]
 pub enum TileType {
     Wall{kind:WallType},
     Path,
     Ladder,
     Start,
     Goal { active: bool },
-    Gate { open: bool, facing: Direction, hidden: GateVisibility },
+    Gate { open: bool, facing: Direction, #[clone] hidden: GateVisibility },
     OneWay { inverted: bool, facing: Direction },
     Button { pressed: bool, inverted: bool, target: ObjectCoordinate },
 }
@@ -148,8 +150,8 @@ pub struct ObjectCoordinate {
 pub struct Connections { pub up: bool, pub down: bool, pub left: bool, pub right: bool }
 
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, TomlFix)]
 pub enum GateVisibility {
     Visible,
-    Hidden(Box<level::TileType>),
+    Hidden(#[clone] Box<level::TileType>),
 }

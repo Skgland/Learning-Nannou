@@ -1,5 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
+
+
 use std::collections::btree_map::BTreeMap;
 use graphics::{
     Context,
@@ -15,7 +17,7 @@ use serde::{
 
 pub use level::*;
 
-//pub mod toml_fix;
+pub mod toml_fix;
 pub mod level;
 pub mod color;
 

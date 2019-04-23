@@ -53,11 +53,10 @@ fn main() -> Result<(), toml::ser::Error> {
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-   if true {
-       if let Err(e) =  save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
-           eprintln!("{}",e);
-       }
-   }
+    /*if let Err(e) = save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
+        eprintln!("{}", e);
+    }*/
+
 
     println!("Construction app!");
     // Create a new game and run it.
@@ -200,7 +199,7 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
 }
 
 fn load_textures(texture_map: &mut TextureMap) -> () {
-    load_texture_into_map(texture_map, TileTextureIndex::TileMap,"tiles.png")
+    load_texture_into_map(texture_map, TileTextureIndex::TileMap, "tiles.png")
 
     /*
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");

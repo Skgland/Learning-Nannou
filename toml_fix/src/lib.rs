@@ -7,7 +7,7 @@ use syn;
 
 mod derive_macros;
 
-#[proc_macro_derive(TomlFix)]
+#[proc_macro_derive(TomlFix,attributes(clone))]
 pub fn toml_fix_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
