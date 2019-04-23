@@ -3,7 +3,6 @@ use super::ObjectCoordinate;
 use std::collections::btree_map::BTreeMap;
 use std::convert::TryFrom;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use toml;
 
 mod direction_fix {
     use super::*;
@@ -126,6 +125,19 @@ mod level_state_fix {
     }
 }
 
+mod wall_type_fix {
+    use serde::Serialize;
+    use crate::game::level::WallType;
+    use serde::Serializer;
+
+    impl Serialize for WallType {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where
+            S: Serializer {
+            unimplemented!()
+        }
+    }
+}
+
 mod tile_type_fix {
     use super::*;
     use serde::ser::SerializeStruct;
@@ -146,7 +158,7 @@ mod tile_type_fix {
 
     #[derive(Serialize, Deserialize)]
     struct TileWall {
-        connections: Connections,
+        wall_type: WallType
     }
 
     #[derive(Serialize, Deserialize)]
@@ -172,9 +184,9 @@ mod tile_type_fix {
             let mut s = serializer.serialize_struct("TileTuple", 2)?;
 
             match self {
-                TileType::Wall(connections) => {
+                TileType::Wall{kind} => {
                     s.serialize_field(VARIANT, WALL)?;
-                    s.serialize_field(CONTENT, &TileWall { connections: *connections })?;
+                    s.serialize_field(CONTENT, &TileWall { wall_type: *kind })?;
                 }
                 TileType::Path => {
                     s.serialize_field(VARIANT, PATH)?;
@@ -221,8 +233,11 @@ mod tile_type_fix {
     impl<'de> Deserialize<'de> for TileType {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where
             D: Deserializer<'de> {
+
             let visitor = unimplemented!();
             let mut d = deserializer.deserialize_struct("TileTuple",&[VARIANT,CONTENT],  visitor );
+
+
 
         }
     }

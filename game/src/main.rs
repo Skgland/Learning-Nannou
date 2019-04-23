@@ -26,7 +26,6 @@ use glutin_window::GlutinWindow;
 use crate::gui::MenuType::LevelSelect;
 use crate::game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
-use crate::game::Connections;
 use crate::game::LevelTemplate;
 use toml::Deserializer;
 use std::fs::File;
@@ -201,10 +200,16 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
 }
 
 fn load_textures(texture_map: &mut TextureMap) -> () {
+    load_texture_into_map(texture_map, TileTextureIndex::TileMap,"tiles.png")
+
+    /*
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: false }, "goal.png");
     load_texture_into_map(texture_map, TileTextureIndex::Start, "start.png");
     load_texture_into_map(texture_map, TileTextureIndex::Path, "path.png");
+
+
+
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: false }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: true }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: false }), "wall.png");
@@ -221,6 +226,7 @@ fn load_textures(texture_map: &mut TextureMap) -> () {
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: true }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: false }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: true }), "wall.png");
+    */
 }
 
 fn load_texture_into_map(texture_map: &mut TextureMap, key: TileTextureIndex, name: &str) -> () {

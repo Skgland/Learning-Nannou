@@ -26,7 +26,7 @@ use crate::game::ObjectCoordinate;
 use crate::game::TileType;
 use crate::gui::GUIVisibility::HUD;
 use conrod_core::image::Id;
-use crate::game::Connections;
+use crate::game::level::Orientation::Horizontal;
 
 
 // Generate a unique `WidgetId` for each widget.
@@ -209,6 +209,10 @@ impl Menu for MenuType {
 }
 
 pub fn test_level() -> LevelTemplate {
+    use crate::game::level::WallType::*;
+    use crate::game::level::NorthSouthAxis::*;
+    use crate::game::level::EastWestAxis::*;
+
     let mut tile_map = BTreeMap::new();
     tile_map.insert(ObjectCoordinate { x: 0, y: 0 }, TileType::Start);
     tile_map.insert(ObjectCoordinate { x: 0, y: 1 }, TileType::Path);
@@ -217,9 +221,9 @@ pub fn test_level() -> LevelTemplate {
     tile_map.insert(ObjectCoordinate { x: 2, y: 2 }, TileType::Path);
     tile_map.insert(ObjectCoordinate { x: 2, y: 3 }, TileType::Path);
     tile_map.insert(ObjectCoordinate { x: 1, y: 3 }, TileType::Path);
-    tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: true, right: true }));
-    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: true, right: false }));
-    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall(Connections { up: false, down: false, left: false, right: true }));
+    tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall { kind: Corner { north_south_facing: North, east_west_facing: West } });
+    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall { kind: Wall { orientation: Horizontal } });
+    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall { kind: Wall { orientation: Horizontal } });
     tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
     LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map } }
 }

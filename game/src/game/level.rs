@@ -39,10 +39,38 @@ impl Direction {
     }
 }
 
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+pub enum NorthSouthAxis {
+    North,
+    South
+}
+
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+pub enum EastWestAxis {
+    East,
+    West
+}
+
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+pub enum Orientation {
+    Horizontal,
+    Vertical
+}
+
+#[derive(Ord,PartialOrd, PartialEq,Eq,Clone,Copy)]
+pub enum WallType{
+    Single{facing:Direction},
+    Wall{orientation:Orientation},
+    Corner{north_south_facing:NorthSouthAxis,east_west_facing: EastWestAxis },//primary and secondary facing should be different
+    End{facing:Direction},
+    Pillar,
+}
+
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
 pub enum TileTextureIndex {
-    Wall(Connections),
+    TileMap,
+    Wall{kind:WallType},
     Path,
     Ladder,
     Start,
@@ -54,7 +82,7 @@ pub enum TileTextureIndex {
 
 #[derive(Clone)]
 pub enum TileType {
-    Wall(Connections),
+    Wall{kind:WallType},
     Path,
     Ladder,
     Start,
@@ -102,7 +130,7 @@ impl TileType {
             TileType::Button { pressed, .. } => TileTextureIndex::Button { pressed: *pressed },
             TileType::OneWay { facing, inverted: false } => TileTextureIndex::OneWay { facing: *facing },
             TileType::OneWay { facing, inverted: true } => TileTextureIndex::OneWay { facing: facing.inverted() },
-            TileType::Wall(connections) => TileTextureIndex::Wall(*connections),
+            TileType::Wall{kind} => TileTextureIndex::Wall{kind:*kind},
             TileType::Gate { open, facing, hidden: GateVisibility::Visible } |
             TileType::Gate { open: open @ true, facing, .. } => TileTextureIndex::Gate { open: *open, facing: *facing },
             TileType::Gate { open: false, facing, hidden: GateVisibility::Hidden(mimic) } => mimic.tile_texture_id(),
