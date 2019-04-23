@@ -14,5 +14,8 @@ pub fn toml_fix_macro_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
     // Build the trait implementation
-    derive_macros::toml_fix::impl_toml_fix_macro(&ast)
+    let result = derive_macros::toml_fix::impl_toml_fix_macro(&ast);
+    //panic!(result.to_string());
+    result
+
 }

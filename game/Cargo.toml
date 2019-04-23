@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 toml_fix = {path="../toml_fix"}
+toml_fix_helpers = {path="../toml_fix_helpers"}
 piston = "0.42.0"
 piston2d-graphics = "0.30.0"
 pistoncore-glutin_window = "0.54.0"
