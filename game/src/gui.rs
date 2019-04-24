@@ -28,7 +28,6 @@ use crate::gui::GUIVisibility::HUD;
 use conrod_core::image::Id;
 use crate::game::level::Orientation::Horizontal;
 
-
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
     pub struct Ids {
@@ -142,7 +141,7 @@ pub trait Menu: Debug {
 
     fn handle_input(&self) -> ();
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids) -> Option<GUIVisibility>;
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list:&Vec<LevelTemplate>) -> Option<GUIVisibility>;
 
     fn back(&self) -> Option<GUIVisibility>;
 }
@@ -166,9 +165,9 @@ impl Menu for MenuType {
         }
     }
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids) -> Option<GUIVisibility> {
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list: &Vec<LevelTemplate>) -> Option<GUIVisibility> {
         match self {
-            MenuType::Custom(menu) => return menu.update(ui, ids),
+            MenuType::Custom(menu) => return menu.update(ui, ids,level_list),
             MenuType::Pause => {
                 widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
@@ -180,14 +179,22 @@ impl Menu for MenuType {
             MenuType::LevelSelect => {
                 widget::Text::new("Level Selection").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
 
-                ids.level_buttons.resize(1, &mut ui.widget_id_generator());
 
-                let clicked = widget::Button::new().label("Test").mid_bottom_of(ids.main_canvas).set(ids.level_buttons[0], ui);
-                if clicked.was_clicked() {
-                    let state = GameState::new(test_level());
+                ids.level_buttons.resize(level_list.len(), &mut ui.widget_id_generator());
 
-                    return Some(HUD(state));
+
+                let mut result = None;
+
+                for (button_id,level) in ids.level_buttons.iter().zip(level_list.iter()) {
+                    let clicked = widget::Button::new().label(&level.name).set(*button_id,ui);
+                    if clicked.was_clicked() {
+                        let state = GameState::new(level.clone());
+                        result = Some(HUD(state))
+                    }
                 }
+
+                return result
+
             }
 
             MenuType::Main => {

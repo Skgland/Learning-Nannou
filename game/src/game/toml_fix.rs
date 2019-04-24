@@ -1,5 +1,4 @@
 use super::level::*;
-use super::ObjectCoordinate;
 use std::collections::btree_map::BTreeMap;
 //use std::convert::TryFrom;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
@@ -87,40 +86,45 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 mod level_state_fix {
     use super::*;
+    use crate::game::level::ObjectCoordinate;
 
 
     impl Serialize for LevelState {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where
             S: Serializer {
-            let map = self.tile_map.iter().flat_map(
-                |(key, value)| {
-                    let mut tmp = String::new();
-                    let mut tmp_ser = toml::Serializer::new(&mut tmp);
-                    if let Ok(()) = key.serialize(&mut tmp_ser) {
-                        Some((tmp, value))
-                    } else {
-                        None
-                    }
-                });
-            serializer.collect_map(map)
+            let mut outer_map: BTreeMap<String, BTreeMap<String, TileType>> = BTreeMap::new();
+
+            let omap = &mut outer_map;
+
+            self.tile_map.iter().for_each(|(ObjectCoordinate { x, y }, tile_type)| {
+                let mut inner_map = omap.remove(&x.to_string()).unwrap_or_else(|| BTreeMap::new());
+                inner_map.insert(y.to_string(), tile_type.clone());
+
+                omap.insert(x.to_string(), inner_map);
+            });
+
+            serializer.collect_map(outer_map)
         }
     }
 
     impl<'de> Deserialize<'de> for LevelState {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-            let map: BTreeMap<String, TileType> = BTreeMap::deserialize(deserializer)?;
+            let input_map: BTreeMap<String, BTreeMap<String,TileType>> = BTreeMap::deserialize(deserializer)?;
 
-            let map = map.iter().flat_map(
-                |(key, value)| {
-                    let mut tmp_des = toml::de::Deserializer::new(key.as_str());
-                    if let Ok(result) = ObjectCoordinate::deserialize(&mut tmp_des) {
-                        Some((result, value.clone()))
-                    } else {
+            let output_map = input_map.iter().flat_map(|(x,innerMap)| {
+                innerMap.iter().flat_map(|(y,value)| {
+                    use std::str::FromStr;
+
+                    if let (Ok(x), Ok(y)) = (i64::from_str(x),i64::from_str(y)) {
+                        Some((ObjectCoordinate { x: x, y: y }, value.clone()))
+                    }else {
                         None
                     }
-                }).collect::<BTreeMap<ObjectCoordinate, TileType>>();
 
-            Ok(LevelState { tile_map: map })
+                    }).collect::<Vec<_>>()
+            }).collect();
+
+            Ok(LevelState { tile_map: output_map })
         }
     }
 }

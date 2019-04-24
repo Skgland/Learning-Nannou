@@ -2,15 +2,7 @@
 
 use std::collections::btree_set::BTreeSet;
 
-use crate::{
-    gui::*,
-    gui::GUIVisibility::HUD,
-    gui::GUIVisibility::GameOnly,
-    gui::GUIVisibility::OverlayMenu,
-    game::GameState,
-    game::TileTextureIndex,
-    game::LevelTemplate,
-};
+use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState, game::TileTextureIndex, game::LevelTemplate, TextureMap};
 use conrod_core::{
     Borderable,
     color::Colorable,
@@ -30,7 +22,7 @@ use std::collections::btree_map::BTreeMap;
 
 pub struct App {
     pub gui: GUI,
-    pub texture_map: BTreeMap<TileTextureIndex, Texture>,
+    pub texture_map: TextureMap,
     pub level_list: Vec<LevelTemplate>,
     keys_down: BTreeSet<Key>,
 }
@@ -54,7 +46,7 @@ impl Action {
 }
 
 impl App {
-    pub fn new(gui: GUI, texture_map: BTreeMap<TileTextureIndex, Texture>, level_list: Vec<LevelTemplate>) -> Self {
+    pub fn new(gui: GUI, texture_map: TextureMap, level_list: Vec<LevelTemplate>) -> Self {
         App { gui, keys_down: BTreeSet::new(), texture_map, level_list }
     }
 
@@ -226,7 +218,7 @@ impl App {
             HUD(_) => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.main_canvas).set(self.gui.ids.menu_title, ui),
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
-                if let Some(menu) = menu.update(ui, &mut self.gui.ids) {
+                if let Some(menu) = menu.update(ui, &mut self.gui.ids,&self.level_list) {
                     self.gui.active_menu = menu;
                 }
             }

@@ -1,5 +1,6 @@
 use super::*;
 use ::toml_fix::*;
+use crate::TextureMap;
 
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -71,7 +72,6 @@ pub enum WallType{
 
 #[derive(Ord, PartialOrd, Eq, PartialEq,TomlFix)]
 pub enum TileTextureIndex {
-    TileMap,
     Wall{kind:WallType},
     Path,
     Ladder,
@@ -105,7 +105,7 @@ impl TileType {
         }
     }
 
-    pub fn draw_tile<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &BTreeMap<TileTextureIndex, G::Texture>, coord: &ObjectCoordinate, state: &GameState) where G::Texture: ImageSize {
+    pub fn draw_tile<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap, coord: &ObjectCoordinate, state: &GameState) where G::Texture: ImageSize {
         use graphics::*;
 
         use self::color::*;

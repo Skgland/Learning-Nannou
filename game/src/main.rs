@@ -199,16 +199,14 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
 }
 
 fn load_textures(texture_map: &mut TextureMap) -> () {
-    load_texture_into_map(texture_map, TileTextureIndex::TileMap, "tiles.png")
 
-    /*
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: false }, "goal.png");
     load_texture_into_map(texture_map, TileTextureIndex::Start, "start.png");
     load_texture_into_map(texture_map, TileTextureIndex::Path, "path.png");
 
 
-
+/*
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: false }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: true }), "wall.png");
     load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: false }), "wall.png");

@@ -16,6 +16,7 @@ use serde::{
 };
 
 pub use level::*;
+use crate::TextureMap;
 
 pub mod toml_fix;
 pub mod level;
@@ -54,7 +55,7 @@ impl GameState {
 
     pub fn handle_input(&self) -> () {}
 
-    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &BTreeMap<level::TileTextureIndex, G::Texture>) -> () {
+    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap) -> () {
         let transform = context.rot_rad(self.rotation).trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0).transform;
         rectangle(PLAYER_COLOR, PLAYER_SQUARE, transform, gl);
     }
