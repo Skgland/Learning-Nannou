@@ -111,8 +111,8 @@ mod level_state_fix {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
             let input_map: BTreeMap<String, BTreeMap<String,TileType>> = BTreeMap::deserialize(deserializer)?;
 
-            let output_map = input_map.iter().flat_map(|(x,innerMap)| {
-                innerMap.iter().flat_map(|(y,value)| {
+            let output_map = input_map.iter().flat_map(|(x,inner_map)| {
+                inner_map.iter().flat_map(|(y,value)| {
                     use std::str::FromStr;
 
                     if let (Ok(x), Ok(y)) = (i64::from_str(x),i64::from_str(y)) {
