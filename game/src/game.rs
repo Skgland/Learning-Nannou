@@ -23,16 +23,17 @@ pub mod level;
 pub mod color;
 
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct PlayerCoordinate {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct GameState {
     //current angle of the rotating square
     pub rotation: f64,
+
     //x and y offset of the rotating square
     pub position: PlayerCoordinate,
 
@@ -55,7 +56,7 @@ impl GameState {
 
     pub fn handle_input(&self) -> () {}
 
-    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap) -> () {
+    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>) -> () {
         let transform = context.rot_rad(self.rotation).trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0).transform;
         rectangle(PLAYER_COLOR, PLAYER_SQUARE, transform, gl);
     }

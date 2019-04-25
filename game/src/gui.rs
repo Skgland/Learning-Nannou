@@ -8,7 +8,6 @@ use std::fmt::Formatter;
 use std::fmt::Error;
 use std::fmt::Debug;
 use conrod_core::widget_ids;
-use opengl_graphics::GlGraphics;
 use conrod_core::widget;
 use conrod_core::position::Positionable;
 use conrod_core::Labelable;
@@ -27,6 +26,7 @@ use crate::game::TileType;
 use crate::gui::GUIVisibility::HUD;
 use conrod_core::image::Id;
 use crate::game::level::Orientation::Horizontal;
+use graphics::Graphics;
 
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
@@ -43,8 +43,8 @@ widget_ids! {
     }
 }
 
-pub struct RenderContext<'font> {
-    pub gl: GlGraphics,
+pub struct RenderContext<'font,G:Graphics> {
+    pub gl: G,
     pub text_texture_cache: opengl_graphics::Texture,
     pub text_vertex_data: Vec<u8>,
     pub glyph_cache: Cache<'font>,
@@ -126,6 +126,7 @@ pub enum MenuType {
     Main,
     Pause,
     LevelSelect,
+    Editor(GameState),
     Custom(Box<dyn Menu>),
 }
 
@@ -152,6 +153,7 @@ impl Menu for MenuType {
             MenuType::Main => String::from("Main Menu"),
             MenuType::Pause => String::from("Pause Menu"),
             MenuType::LevelSelect => String::from("Level Selection"),
+            MenuType::Editor(GameState{level_template,..}) => format!("Level Editor: {}",level_template.name),
             MenuType::Custom(menu) => menu.menu_name(),
         }
     }
@@ -161,13 +163,17 @@ impl Menu for MenuType {
             MenuType::Main => unimplemented!(),
             MenuType::Pause => unimplemented!(),
             MenuType::LevelSelect => unimplemented!(),
+            MenuType::Editor(_) => unimplemented!(),
             MenuType::Custom(menu) => menu.handle_input()
         }
     }
 
     fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list: &Vec<LevelTemplate>) -> Option<GUIVisibility> {
         match self {
-            MenuType::Custom(menu) => return menu.update(ui, ids,level_list),
+            MenuType::Custom(menu) => menu.update(ui, ids,level_list),
+            MenuType::Editor(_) =>{
+                None
+            }
             MenuType::Pause => {
                 widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
@@ -175,6 +181,7 @@ impl Menu for MenuType {
                                      .middle_of(ids.main_canvas)
                                      .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
                                      .set(ids.contiue_button, ui);
+                None
             }
             MenuType::LevelSelect => {
                 widget::Text::new("Level Selection").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
@@ -193,21 +200,21 @@ impl Menu for MenuType {
                     }
                 }
 
-                return result
-
+                result
             }
 
             MenuType::Main => {
                 widget::Button::new().label("Level Editor").middle_of(ids.main_canvas).set(ids.editor_button, ui);
                 widget::Text::new("Main Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
+                None
             }
         }
-        None
     }
 
     fn back(&self) -> Option<GUIVisibility> {
         match self {
             MenuType::Main => None,
+            MenuType::Editor(state) => Some(GUIVisibility::HUD(state.clone())),
             MenuType::Pause => Some(GUIVisibility::MenuOnly(MenuType::LevelSelect)),
             MenuType::LevelSelect => Some(GUIVisibility::MenuOnly(MenuType::Main)),
             MenuType::Custom(menu) => menu.back()
@@ -229,8 +236,8 @@ pub fn test_level() -> LevelTemplate {
     tile_map.insert(ObjectCoordinate { x: 2, y: 3 }, TileType::Path);
     tile_map.insert(ObjectCoordinate { x: 1, y: 3 }, TileType::Path);
     tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall { kind: Corner { north_south_facing: North, east_west_facing: West } });
-    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall { kind: Wall { orientation: Horizontal } });
-    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall { kind: Wall { orientation: Horizontal } });
+    tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
+    tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
     tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
     LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map } }
 }

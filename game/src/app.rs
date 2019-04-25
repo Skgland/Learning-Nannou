@@ -2,7 +2,7 @@
 
 use std::collections::btree_set::BTreeSet;
 
-use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState, game::TileTextureIndex, game::LevelTemplate, TextureMap};
+use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState,  game::LevelTemplate, TextureMap};
 use conrod_core::{
     Borderable,
     color::Colorable,
@@ -12,17 +12,17 @@ use conrod_core::{
     widget::Widget,
 };
 
-use opengl_graphics::{GlGraphics, Texture};
+use opengl_graphics::{GlGraphics};
 use piston::input::*;
 pub use piston::window::*;
 use piston_window::{texture::UpdateTexture, PistonWindow};
 use glutin_window::GlutinWindow;
-use graphics::Context;
+use graphics::{Context};
 use std::collections::btree_map::BTreeMap;
 
 pub struct App {
     pub gui: GUI,
-    pub texture_map: TextureMap,
+    pub texture_map: TextureMap<opengl_graphics::GlGraphics>,
     pub level_list: Vec<LevelTemplate>,
     keys_down: BTreeSet<Key>,
 }
@@ -45,12 +45,16 @@ impl Action {
     }
 }
 
+type G = opengl_graphics::GlGraphics;
+
 impl App {
-    pub fn new(gui: GUI, texture_map: TextureMap, level_list: Vec<LevelTemplate>) -> Self {
+
+
+    pub fn new(gui: GUI, texture_map: TextureMap<G>, level_list: Vec<LevelTemplate>) -> Self {
         App { gui, keys_down: BTreeSet::new(), texture_map, level_list }
     }
 
-    pub fn render(&self, context: &mut RenderContext, args: &RenderArgs) {
+    pub fn render(&self, context: &mut RenderContext<G>, args: &RenderArgs) {
         use graphics::*;
 
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];

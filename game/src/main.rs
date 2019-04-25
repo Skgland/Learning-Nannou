@@ -34,6 +34,7 @@ use serde::ser::Serialize;
 use toml::ser::Error::Custom;
 use std::io::Write;
 use std::path::PathBuf;
+use graphics::Graphics;
 
 extern crate find_folder;
 
@@ -53,9 +54,9 @@ fn main() -> Result<(), toml::ser::Error> {
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-    /*if let Err(e) = save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
+    if let Err(e) = save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
         eprintln!("{}", e);
-    }*/
+    }
 
 
     println!("Construction app!");
@@ -140,7 +141,7 @@ fn create_ui() -> Ui {
     ui
 }
 
-type TextureMap = std::collections::btree_map::BTreeMap<TileTextureIndex, Texture>;
+type TextureMap<G> = std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
 
 fn load_levels() -> Vec<LevelTemplate> {
     let assets = get_asset_path();
@@ -198,7 +199,7 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
     }
 }
 
-fn load_textures(texture_map: &mut TextureMap) -> () {
+fn  load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {
 
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");
     load_texture_into_map(texture_map, TileTextureIndex::Goal { active: false }, "goal.png");
@@ -226,7 +227,7 @@ fn load_textures(texture_map: &mut TextureMap) -> () {
     */
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap, key: TileTextureIndex, name: &str) -> () {
+fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) -> () {
     let assets = get_asset_path();
     let path = assets.join("textures").join(name);
     let settings = TextureSettings::new();
@@ -246,7 +247,7 @@ fn create_app(mut ui: Ui) -> App {
     let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
     //let test_texture = image_map.insert(test_texture);
 
-    let mut texture_map: TextureMap = BTreeMap::new();
+    let mut texture_map = BTreeMap::new();
 
     load_textures(&mut texture_map);
 
@@ -268,7 +269,7 @@ fn create_app(mut ui: Ui) -> App {
     )
 }
 
-fn create_render_context<'font>() -> RenderContext<'font> {
+fn create_render_context<'font>() -> RenderContext<'font,opengl_graphics::GlGraphics> {
     let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
     let gl = GlGraphics::new(OPEN_GL_VERSION);
     RenderContext {
