@@ -36,11 +36,11 @@ pub fn impl_toml_fix_macro(ast: &DeriveInput) -> proc_macro::TokenStream {
             #![allow(unused_imports)]
 
             //TomlFix imports
-            use std::convert::{Into,TryFrom};
+            use std::convert::{Into,TryFrom,TryInto};
             use super::*;
             use super::#name::*;
             use ::toml_fix_helpers::{EnumTomlFixed,EnumVariant};
-            use ::serde::{Serialize,Deserialize,Serializer,Deserializer,de::Error};
+            use ::serde::{Serialize,Deserialize,Serializer,Deserializer,de::Error as _ , ser::Error as _};
 
             #content
         }
@@ -73,7 +73,7 @@ pub mod enum_fix {
             impl Serialize for #ident where Self: EnumTomlFixed {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok,S::Error> where
                     S: Serializer {
-                    let ev: EnumVariant = self.into();
+                    let ev: EnumVariant = self.try_into().map_err(|err| S::Error::custom("Some error occurred while deserializing Enum #ident"))?;
                     ev.serialize(serializer)
                 }
             }
@@ -82,7 +82,7 @@ pub mod enum_fix {
                fn deserialize<D>(deserializer: D) -> Result<Self,D::Error> where
                     D: Deserializer<'de> {
                     let ev = EnumVariant::deserialize(deserializer)?;
-                    Self::try_from(ev).map_err(|err| D::Error::duplicate_field("Some error occurred while deserializing Enum #ident"))
+                    Self::try_from(ev).map_err(|err| D::Error::custom("Some error occurred while deserializing Enum #ident"))
                 }
             }
 
@@ -92,11 +92,12 @@ pub mod enum_fix {
     fn impl_toml_fix_macro_enum_into(ident: &Ident, variants: &Vec<Enum>) -> TokenStream {
         let matches: Vec<_> = variants.iter().map(|v| v.impl_toml_fix_macro_enum_into_match(ident)).collect();
 
-        println!("Generated {} Matches for Enum with {} Variants", matches.len(), variants.len());
+        //println!("Generated {} Matches for Enum with {} Variants", matches.len(), variants.len());
 
         quote! {
-            impl Into<EnumVariant> for &#ident {
-                fn into(self) -> EnumVariant{
+            impl TryInto<EnumVariant> for &#ident {
+                type Error = toml::ser::Error;
+                fn try_into(self) -> Result<EnumVariant ,<Self as TryInto<EnumVariant>>::Error>{
                     match self {
                         #(#matches),*
                         //_ => panic!("Unhandled Enum Variant")
@@ -104,9 +105,12 @@ pub mod enum_fix {
                 }
             }
 
-            impl Into<EnumVariant> for #ident {
-                fn into(self) -> EnumVariant{
-                    (&self).into()
+            impl TryInto<EnumVariant> for #ident {
+
+                type Error = <&'static Self as TryInto<EnumVariant>>::Error;
+
+                fn try_into(self) -> Result<EnumVariant ,<Self as TryInto<EnumVariant>>::Error>{
+                    (&self).try_into()
                 }
             }
         }
@@ -116,11 +120,11 @@ pub mod enum_fix {
         let matches = variants.iter().map(|v| v.impl_toml_fix_macro_enum_from_match(ident));
         quote! {
             impl TryFrom<EnumVariant> for #ident  {
-                type Error = String;
+                type Error = toml::de::Error;
                 fn try_from(variant:EnumVariant) -> Result<Self,<Self as TryFrom<EnumVariant>>::Error> {
                     match &variant {
                         #(#matches),*
-                        _ => Err("Unknown Variant".to_string())
+                        _ => Err(<toml::de::Error as serde::de::Error>::custom("Unknown Variant"))
                     }
                 }
             }
@@ -154,7 +158,7 @@ pub mod enum_fix {
                     let str = format!("{}", ident);
                     quote! {
                         #enum_ident::#ident => {
-                            EnumVariant{variant:String::from(#str),content:String::new()}
+                            Ok(EnumVariant{variant:String::from(#str),content:String::new()})
                         }
                     }
                 }
@@ -176,8 +180,8 @@ pub mod enum_fix {
 
                             let mut out = String::new();
                             let mut serializer = toml::ser::Serializer::new(&mut out);
-                            content.serialize(&mut serializer);
-                            EnumVariant{variant:String::from(#str),content:out}
+                            content.serialize(&mut serializer)?;
+                            Ok(EnumVariant{variant:String::from(#str),content:out})
                         }
                     }
                 }
@@ -201,8 +205,8 @@ pub mod enum_fix {
                             let content = #struct_ident{#(#fields_struct),*};
                             let mut out = String::new();
                             let mut serializer = toml::ser::Serializer::new(&mut out);
-                            content.serialize(&mut serializer);
-                            EnumVariant{variant:String::from(#str),content:out}
+                            content.serialize(&mut serializer)?;
+                            Ok(EnumVariant{variant:String::from(#str),content:out})
                         }
                     }
                 }
@@ -224,7 +228,7 @@ pub mod enum_fix {
 
                     let content = quote! {
                             let mut des = toml::de::Deserializer::new(content);
-                            let #struct_ident{#(#field_names),*} = #struct_ident::deserialize(&mut des).map_err(|_| "Failed to deserialize #enum_ident::#ident")?;
+                            let #struct_ident{#(#field_names),*} = #struct_ident::deserialize(&mut des).map_err(|_| toml::de::Error::custom("Failed to deserialize #enum_ident::#ident"))?;
                             Ok(#enum_ident::#ident(#(#field_names),*))
                     };
                     (format!("{}", ident), content)
@@ -236,7 +240,7 @@ pub mod enum_fix {
                     let ident = &variant.ident;
                     let content = quote! {
                             let mut des = toml::de::Deserializer::new(content);
-                            let #struct_ident{#(#it_fields),*} = #struct_ident::deserialize(&mut des).map_err(|_| "Failed to deserialize #enum_ident::#ident")?;
+                            let #struct_ident{#(#it_fields),*} = #struct_ident::deserialize(&mut des).map_err(|_| toml::de::Error::custom("Failed to deserialize #enum_ident::#ident"))?;
                             Ok(#enum_ident::#ident{#(#fields),*})
                     };
                     (format!("{}", ident), content)
