@@ -22,7 +22,7 @@ pub fn impl_toml_fix_macro(ast: &DeriveInput) -> proc_macro::TokenStream {
             unimplemented!()
         }
         Enum(data) => {
-            enum_fix::impl_toml_fix_macro_enum(&ast.ident, data)
+            enum_fix::impl_toml_fix_macro_enum(name, data)
         }
         Union(..) => {
             unimplemented!()

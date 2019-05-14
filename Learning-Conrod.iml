@@ -18,6 +18,16 @@
       <sourceFolder url="file://$MODULE_DIR$/toml_fix_helpers/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/toml_fix_helpers/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/toml_fix_helpers/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros_helpers/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros_helpers/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros_helpers/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/derive_macros_helpers/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/derive_macros/target" />
+      <excludeFolder url="file://$MODULE_DIR$/derive_macros_helpers/target" />
       <excludeFolder url="file://$MODULE_DIR$/game/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/toml_fix/target" />

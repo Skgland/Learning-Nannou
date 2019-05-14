@@ -5,6 +5,8 @@ authors = ["BB20101997 <bb-github@t-online.de>"]
 edition = "2018"
 
 [dependencies]
+derive_macros = {path="../derive_macros"}
+derive_macros_helpers = {path="../derive_macros_helpers"}
 toml_fix = {path="../toml_fix"}
 toml_fix_helpers = {path="../toml_fix_helpers"}
 piston = "0.42.0"

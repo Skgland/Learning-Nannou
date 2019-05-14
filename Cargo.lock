@@ -275,6 +275,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_macros"
+version = "0.1.0"
+dependencies = [
+ "derive_macros_helpers 0.1.0",
+ "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "derive_macros_helpers"
+version = "0.1.0"
+
+[[package]]
 name = "dlib"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -531,6 +545,8 @@ version = "0.1.0"
 dependencies = [
  "conrod_core 0.63.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "conrod_piston 0.63.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "derive_macros 0.1.0",
+ "derive_macros_helpers 0.1.0",
  "find_folder 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_core 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
 use std::collections::btree_set::BTreeSet;
+use derive_macros::*;
 
 use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState,  game::LevelTemplate, TextureMap};
 use conrod_core::{
@@ -27,6 +28,7 @@ pub struct App {
     keys_down: BTreeSet<Key>,
 }
 
+#[derive(Bounded)]
 pub enum Action {
     UP,
     DOWN,
