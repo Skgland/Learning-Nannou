@@ -1,6 +1,8 @@
 use super::*;
 use ::toml_fix::*;
 use crate::TextureMap;
+use derive_macros::*;
+use derive_macros_helpers::*;
 
 
 #[derive(Clone, Serialize, Deserialize,Debug)]
@@ -15,7 +17,7 @@ pub struct LevelState {
     pub tile_map: BTreeMap<ObjectCoordinate, TileType>
 }
 
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, TomlFix)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, TomlFix,Bounded,Enumerable)]
 pub enum Direction {
     UP,
     DOWN,
@@ -50,7 +52,7 @@ impl Direction {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix)]
+#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
 pub enum NorthSouthAxis {
     North,
     South,
@@ -65,7 +67,7 @@ impl NorthSouthAxis {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix)]
+#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
 pub enum EastWestAxis {
     East,
     West,
@@ -80,7 +82,7 @@ impl EastWestAxis {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix)]
+#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
 pub enum Orientation {
     Horizontal,
     Vertical,
@@ -95,7 +97,7 @@ impl Orientation {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix)]
+#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
 pub enum WallType {
     Single { facing: Direction },
     Double { orientation: Orientation },
@@ -120,7 +122,7 @@ impl WallType {
 }
 
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, TomlFix)]
+#[derive(Debug,Ord, PartialOrd, Eq, PartialEq, TomlFix, Bounded,Enumerable)]
 pub enum TileTextureIndex {
     Wall { kind: WallType },
     Path,

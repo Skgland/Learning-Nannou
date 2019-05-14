@@ -216,38 +216,27 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
 }
 
 fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {
-    load_texture_into_map(texture_map, TileTextureIndex::Goal { active: true }, "goal.png");
-    load_texture_into_map(texture_map, TileTextureIndex::Goal { active: false }, "goal.png");
-    load_texture_into_map(texture_map, TileTextureIndex::Start, "start.png");
-    load_texture_into_map(texture_map, TileTextureIndex::Path, "path.png");
 
+    use derive_macros_helpers::Enumerable;
 
-    /*
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: false, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: false, left: true, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: false, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: false, down: true, left: true, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: false, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: false, left: true, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: false, right: true }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: false }), "wall.png");
-        load_texture_into_map(texture_map, TileTextureIndex::Wall(Connections { up: true, down: true, left: true, right: true }), "wall.png");
-      */
+    for tileIndex in TileTextureIndex::enumerate_all(){
+        let file_name = tileIndex.file_name();
+        load_texture_into_map(texture_map,tileIndex,&file_name);
+    }
+
 }
 
 fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) -> () {
+
+
     let assets = get_asset_path();
-    let path = assets.join("textures").join(name);
+    let path = assets.join("textures").join(format!("{}.png",name));
     let settings = TextureSettings::new();
     if let Ok(texture) = Texture::from_path(&path, &settings) {
         texture_map.insert(key, texture);
+    }else {
+
+        eprintln!("Failed loading Texture with Index: {:?} , at: {}.png", &key,name);
     }
 }
 

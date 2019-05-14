@@ -1,7 +1,7 @@
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 use proc_macro2::TokenStream;
-use syn::{DeriveInput, Data::*, Ident, DataStruct, DataEnum, Variant, Fields, FieldsNamed, FieldsUnnamed};
+use syn::{DeriveInput, Data::*, Ident, DataStruct, Variant, Fields, FieldsNamed, FieldsUnnamed};
 
 pub fn impl_bounded_trait_derive(ast: &DeriveInput) -> proc_macro::TokenStream {
     let name = &ast.ident;
@@ -35,14 +35,14 @@ fn get_min_for_ast(ast: &DeriveInput) -> TokenStream {
                 .find(|var| !has_skip_attribute(var)) {
                 impl_enum::get_min_for_enum_variant(&ast.ident, variant)
             } else {
-                panic!("Could not determine minimum for {}!", &ast.ident)
+                panic!("Could not determine minimum for {} no unskipped Variants!", &ast.ident)
             }
         }
         Struct(data) => {
-            impl_struct::get_min_for_struct(data)
+            impl_struct::get_min_for_struct(&ast.ident,data)
         }
         Union(..) => {
-            unimplemented!()
+            panic!("Derive of Bounded not available for Unions!")
         }
     }
 }
@@ -55,11 +55,11 @@ fn get_max_for_ast(ast: &DeriveInput) -> TokenStream {
                 .find(|var| !has_skip_attribute(var)) {
                 impl_enum::get_max_for_enum_variant(&ast.ident, variant)
             } else {
-                panic!("Could not determine minimum for {}!", &ast.ident)
+                panic!("Could not determine maximum for {} no unskipped Variants!", &ast.ident)
             }
         }
         Struct(data) => {
-            impl_struct::get_max_for_struct(data)
+            impl_struct::get_max_for_struct(&ast.ident,data)
         }
         Union(..) => {
             panic!("Derive of Bounded not available for Unions!")
@@ -67,7 +67,7 @@ fn get_max_for_ast(ast: &DeriveInput) -> TokenStream {
     }
 }
 
-mod impl_enum {
+pub mod impl_enum {
     use super::*;
     pub fn get_min_for_enum_variant(enum_ident: &Ident, variant: &Variant) -> TokenStream {
         let name = &variant.ident;
@@ -75,12 +75,12 @@ mod impl_enum {
         match &variant.fields {
             Fields::Unit => {
                 quote! {
-                #enum_ident::#name
-            }
+                    #enum_ident::#name
+                }
             }
             Fields::Named(FieldsNamed { named, .. }) => {
                 let (idents, types): (Vec<_>, Vec<_>) = named.iter()
-                    .map(|field| (field.ident.as_ref().unwrap().clone(), field.ty.clone())).unzip();
+                    .map(|field| (field.ident.as_ref().unwrap(), &field.ty)).unzip();
                 quote! {
                 #enum_ident::#name{#(#idents: <#types as Bounded>::minimum()),*}
             }
@@ -124,9 +124,49 @@ mod impl_enum {
 mod impl_struct {
     use super::*;
 
-    pub fn get_min_for_struct(struct_data:&DataStruct)-> TokenStream{}
+    pub fn get_min_for_struct(struct_ident:&Ident,struct_data:&DataStruct)-> TokenStream{
+        match &struct_data.fields {
+            Fields::Unit => {
+                quote! {
+                        #struct_ident
+                    }
+            }
+            Fields::Named(FieldsNamed { named, .. }) => {
+                let (names, types): (Vec<_>, Vec<_>) = named.iter().map(|field| (field.ident.as_ref().unwrap(), &field.ty)).unzip();
+                quote! {
+                        #struct_ident{#(#names:<#types as Bounded>::minimum()),*}
+                    }
+            }
+            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+                let types = unnamed.iter().map(|field| &field.ty);
+                quote! {
+                        #struct_ident(#(<#types as Bounded>::minimum()),*)
+                    }
+            }
+        }
+    }
 
-    pub fn get_max_for_struct(struct_data:&DataStruct)-> TokenStream{}
+    pub fn get_max_for_struct(struct_ident: &Ident,struct_data:&DataStruct)-> TokenStream{
+        match &struct_data.fields {
+            Fields::Unit => {
+                quote! {
+                        #struct_ident
+                    }
+            }
+            Fields::Named(FieldsNamed { named, .. }) => {
+                let (names, types): (Vec<_>, Vec<_>) = named.iter().map(|field| (field.ident.as_ref().unwrap(), &field.ty)).unzip();
+                quote! {
+                        #struct_ident{#(#names:<#types as Bounded>::maximum()),*}
+                    }
+            }
+            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
+                let types = unnamed.iter().map(|field| &field.ty);
+                quote! {
+                        #struct_ident(#(<#types as Bounded>::maximum()),*)
+                    }
+            }
+        }
+    }
 
 }
 
