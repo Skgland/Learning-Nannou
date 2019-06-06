@@ -238,6 +238,7 @@ pub fn test_level() -> LevelTemplate {
     tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall { kind: Corner { north_south_facing: North, east_west_facing: West } });
     tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
     tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
-    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
+    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: false });
+    tile_map.insert(ObjectCoordinate{x:-1,y:-1},TileType::Button {pressed:false,inverted:false,target: ObjectCoordinate{x:0,y:3}});
     LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map } }
 }
