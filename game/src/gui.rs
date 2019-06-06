@@ -82,11 +82,11 @@ impl Debug for GUIVisibility {
                 Ok(())
             }
             HUD(_) => {
-                (&String::from("HUD") as &Debug).fmt(f)
+                Debug::fmt(&String::from("HUD"), f)
             }
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
-                (&menu.menu_name() as &Debug).fmt(f)
+                Debug::fmt(&menu.menu_name(),f)
             }
         }
     }
@@ -116,7 +116,7 @@ impl GUIVisibility {
 
 impl Display for GUIVisibility {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        (self as &Debug).fmt(f)
+        Debug::fmt(self,f)
     }
 }
 
@@ -133,7 +133,7 @@ pub enum MenuType {
 
 impl Display for MenuType {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        (self as &Debug).fmt(f)
+        Debug::fmt(self,f)
     }
 }
 
