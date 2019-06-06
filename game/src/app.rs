@@ -214,6 +214,7 @@ impl App {
                 state.rotation += 8.0 * args.dt;
                 let keys_down = &self.keys_down;
                 key_map.iter().filter(|(&k, _)| keys_down.contains(&k)).for_each(|(_, action)| action.perform(state));
+                state.handle_input()
             }
             MenuOnly(..) | OverlayMenu(..) => {}
         }

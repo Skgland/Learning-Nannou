@@ -82,11 +82,11 @@ impl Debug for GUIVisibility {
                 Ok(())
             }
             HUD(_) => {
-                (&String::from("HUD") as &Debug).fmt(f)
+                Debug::fmt(&String::from("HUD"), f)
             }
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
-                (&menu.menu_name() as &Debug).fmt(f)
+                Debug::fmt(&menu.menu_name(),f)
             }
         }
     }
@@ -116,7 +116,7 @@ impl GUIVisibility {
 
 impl Display for GUIVisibility {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        (self as &Debug).fmt(f)
+        Debug::fmt(self,f)
     }
 }
 
@@ -133,7 +133,7 @@ pub enum MenuType {
 
 impl Display for MenuType {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        (self as &Debug).fmt(f)
+        Debug::fmt(self,f)
     }
 }
 
@@ -238,6 +238,7 @@ pub fn test_level() -> LevelTemplate {
     tile_map.insert(ObjectCoordinate { x: 0, y: 2 }, TileType::Wall { kind: Corner { north_south_facing: North, east_west_facing: West } });
     tile_map.insert(ObjectCoordinate { x: 1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
     tile_map.insert(ObjectCoordinate { x: -1, y: 2 }, TileType::Wall { kind: Double { orientation: Horizontal } });
-    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: true });
+    tile_map.insert(ObjectCoordinate { x: 0, y: 3 }, TileType::Goal { active: false });
+    tile_map.insert(ObjectCoordinate{x:-1,y:-1},TileType::Button {pressed:false,inverted:false,target: ObjectCoordinate{x:0,y:3}});
     LevelTemplate { name: String::from("Test"), init_state: LevelState { tile_map } }
 }

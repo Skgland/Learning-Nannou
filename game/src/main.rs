@@ -219,9 +219,9 @@ fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> (
 
     use derive_macros_helpers::Enumerable;
 
-    for tileIndex in TileTextureIndex::enumerate_all(){
-        let file_name = tileIndex.file_name();
-        load_texture_into_map(texture_map,tileIndex,&file_name);
+    for tile_index in TileTextureIndex::enumerate_all(){
+        let file_name = tile_index.file_name();
+        load_texture_into_map(texture_map,tile_index,&file_name);
     }
 
 }

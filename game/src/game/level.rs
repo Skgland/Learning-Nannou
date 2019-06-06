@@ -157,6 +157,25 @@ impl TileType {
         }
     }
 
+    pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState)->()>> {
+        match self {
+            TileType::Goal {active:true} => {
+                println!("Goal reached!");
+                None
+            }
+            TileType::Button {pressed,inverted,target} => {
+                println!("Stepping on a Button");
+                *pressed = !*pressed;
+                let power = *pressed^*inverted;
+                let  t = target.clone();
+                Some(Box::new(move |game:&mut GameState|{
+                    game.level_state.tile_map.get_mut(&t).map(|tile| tile.apply_button(power));
+                }))
+            }
+            _ => {None}
+        }
+    }
+
     pub fn draw_tile<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>, coord: &ObjectCoordinate, state: &GameState) where G::Texture: ImageSize {
         use graphics::*;
 
