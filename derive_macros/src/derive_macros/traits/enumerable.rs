@@ -1,7 +1,6 @@
 use quote::{quote, quote_spanned};
-use syn::spanned::Spanned;
 use proc_macro2::{TokenStream, Span};
-use syn::{DeriveInput, Data::*, Ident, DataStruct, Variant, Fields, FieldsNamed, FieldsUnnamed, DataEnum, Field};
+use syn::{DeriveInput, Data::*, Ident, Variant, Fields, FieldsNamed, FieldsUnnamed, DataEnum};
 
 pub fn impl_enumerable_trait_derive(ast: &DeriveInput) -> proc_macro::TokenStream{
 
@@ -45,7 +44,7 @@ fn impl_next_for_enum(ast:&DeriveInput,enum_data:&DataEnum) -> TokenStream{
     let mut matches = vec![];
 
     while let Some(current_variant) = variant_iterator.next(){
-        let next_variant = variant_iterator.peek().map(|&a| a);
+        let next_variant = variant_iterator.peek().copied();
 
         let match_block = impl_next_for_enum_variant(&ast.ident,current_variant,next_variant);
         matches.push(match_block);

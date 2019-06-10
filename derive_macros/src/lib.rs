@@ -7,6 +7,7 @@ use syn;
 
 mod derive_macros;
 
+#[allow(clippy::let_and_return)]
 #[proc_macro_derive(Bounded,attributes(skip))]
 pub fn bounded_trait_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
@@ -20,6 +21,7 @@ pub fn bounded_trait_macro_derive(input: TokenStream) -> TokenStream {
 
 }
 
+#[allow(clippy::let_and_return)]
 #[proc_macro_derive(Enumerable, attributes(skip))]
 pub fn enumerable_trait_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree

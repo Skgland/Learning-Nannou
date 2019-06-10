@@ -89,7 +89,7 @@ pub mod enum_fix {
         }
     }
 
-    fn impl_toml_fix_macro_enum_into(ident: &Ident, variants: &Vec<Enum>) -> TokenStream {
+    fn impl_toml_fix_macro_enum_into(ident: &Ident, variants: &[Enum]) -> TokenStream {
         let matches: Vec<_> = variants.iter().map(|v| v.impl_toml_fix_macro_enum_into_match(ident)).collect();
 
         //println!("Generated {} Matches for Enum with {} Variants", matches.len(), variants.len());
@@ -116,7 +116,7 @@ pub mod enum_fix {
         }
     }
 
-    fn impl_toml_fix_macro_enum_try_from(ident: &Ident, variants: &Vec<Enum>) -> TokenStream {
+    fn impl_toml_fix_macro_enum_try_from(ident: &Ident, variants: &[Enum]) -> TokenStream {
         let matches = variants.iter().map(|v| v.impl_toml_fix_macro_enum_from_match(ident));
         quote! {
             impl TryFrom<EnumVariant> for #ident  {
@@ -148,7 +148,7 @@ pub mod enum_fix {
         }
 
         fn has_clone_attribute(field:&Field) -> bool {
-            field.attrs.iter().any(|attr| attr.path.segments.first().map(|pair| pair.into_value().ident.to_string() == "clone").unwrap_or(false))
+            field.attrs.iter().any(|attr| attr.path.segments.first().map(|pair| pair.into_value().ident == "clone").unwrap_or(false))
         }
 
         fn impl_toml_fix_macro_enum_into_match(&self, enum_ident: &Ident) -> TokenStream {
@@ -260,7 +260,7 @@ pub mod enum_fix {
         let ident = syn::Ident::new(&format!("Variant{}Struct", &variant.ident), variant.ident.span());
 
         match &variant.fields {
-            Fields::Unit => return Enum::Unit(variant),
+            Fields::Unit => Enum::Unit(variant),
             Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 let (field_names, field_types): (Vec<_>, Vec<_>) = unnamed.iter().zip(0..).map(|(a, b)| (Ident::new(&format!("index_{}", b), variant.ident.span()), &a.ty)).unzip();
 

@@ -93,7 +93,7 @@ impl Debug for GUIVisibility {
 }
 
 impl GUIVisibility {
-    pub fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) -> () {
+    pub fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>)  {
         match self {
             GUIVisibility::GameOnly(state) => {
                 *self = GUIVisibility::HUD(state.clone())
@@ -140,9 +140,9 @@ impl Display for MenuType {
 pub trait Menu: Debug {
     fn menu_name(&self) -> String;
 
-    fn handle_input(&self) -> ();
+    fn handle_input(&self) ;
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list:&Vec<LevelTemplate>) -> Option<GUIVisibility>;
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list:&[LevelTemplate]) -> Option<GUIVisibility>;
 
     fn back(&self) -> Option<GUIVisibility>;
 }
@@ -158,7 +158,7 @@ impl Menu for MenuType {
         }
     }
 
-    fn handle_input(&self) -> () {
+    fn handle_input(&self)  {
         match self {
             MenuType::Main => unimplemented!(),
             MenuType::Pause => unimplemented!(),
@@ -168,7 +168,7 @@ impl Menu for MenuType {
         }
     }
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list: &Vec<LevelTemplate>) -> Option<GUIVisibility> {
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list: &[LevelTemplate]) -> Option<GUIVisibility> {
         match self {
             MenuType::Custom(menu) => menu.update(ui, ids,level_list),
             MenuType::Editor(_) =>{

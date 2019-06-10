@@ -138,7 +138,7 @@ impl App {
         use graphics::*;
     }
 
-    pub fn input(&mut self, event: Input, window: &mut PistonWindow<GlutinWindow>) -> () {
+    pub fn input(&mut self, event: Input, window: &mut PistonWindow<GlutinWindow>) {
         if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event.clone()), self.gui.ui.win_w, self.gui.ui.win_h) {
             self.gui.ui.handle_event(cr_event);
         }
@@ -168,7 +168,7 @@ impl App {
         }
     }
 
-    pub fn update(&mut self, args: &UpdateArgs, window: &mut PistonWindow<GlutinWindow>) {
+    pub fn update(&mut self, args: UpdateArgs, window: &mut PistonWindow<GlutinWindow>) {
         use GUIVisibility::*;
 
 

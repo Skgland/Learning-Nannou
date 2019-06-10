@@ -63,7 +63,7 @@ impl GameState {
         }
     }
 
-    pub fn handle_input(&mut self) -> () {
+    pub fn handle_input(&mut self) {
         let new_pos = (&self.position).into();
         if self.old_position != new_pos {
             self.old_position = new_pos;
@@ -74,7 +74,7 @@ impl GameState {
         }
     }
 
-    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>) -> () {
+    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>) {
         let transform = context.rot_rad(self.rotation).trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0).transform;
         rectangle(PLAYER_COLOR, PLAYER_SQUARE, transform, gl);
     }
