@@ -97,7 +97,7 @@ mod level_state_fix {
             let omap = &mut outer_map;
 
             self.tile_map.iter().for_each(|(ObjectCoordinate { x, y }, tile_type)| {
-                let mut inner_map = omap.remove(&x.to_string()).unwrap_or_else(|| BTreeMap::new());
+                let mut inner_map = omap.remove(&x.to_string()).unwrap_or_else(BTreeMap::new);
                 inner_map.insert(y.to_string(), tile_type.clone());
 
                 omap.insert(x.to_string(), inner_map);
@@ -116,7 +116,7 @@ mod level_state_fix {
                     use std::str::FromStr;
 
                     if let (Ok(x), Ok(y)) = (i64::from_str(x),i64::from_str(y)) {
-                        Some((ObjectCoordinate { x: x, y: y }, value.clone()))
+                        Some((ObjectCoordinate { x, y }, value.clone()))
                     }else {
                         None
                     }

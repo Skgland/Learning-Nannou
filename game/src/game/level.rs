@@ -1,23 +1,23 @@
 use super::*;
-use ::toml_fix::*;
 use crate::TextureMap;
-use derive_macros::*;
-use derive_macros_helpers::*;
+use ::toml_fix::*;
+use ::derive_macros::*;
+use ::derive_macros_helpers::*;
 
 
-#[derive(Clone, Serialize, Deserialize,Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LevelTemplate {
     pub name: String,
     pub init_state: LevelState,
 }
 
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct LevelState {
     pub tile_map: BTreeMap<ObjectCoordinate, TileType>
 }
 
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, TomlFix,Bounded,Enumerable)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, TomlFix, Bounded, Enumerable)]
 pub enum Direction {
     UP,
     DOWN,
@@ -28,7 +28,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn inverted(&self) -> Self {
+    pub fn inverted(self) -> Self {
         use self::Direction::*;
         match self {
             Direction::UP => DOWN,
@@ -40,7 +40,7 @@ impl Direction {
         }
     }
 
-    pub fn file_modifier(&self) -> &'static str {
+    pub fn file_modifier(self) -> &'static str {
         match self {
             Direction::UP => "lower",
             Direction::DOWN => "upper",
@@ -52,14 +52,14 @@ impl Direction {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix, Bounded, Enumerable)]
 pub enum NorthSouthAxis {
     North,
     South,
 }
 
 impl NorthSouthAxis {
-    pub fn file_modifier(&self) -> &'static str {
+    pub fn file_modifier(self) -> &'static str {
         match self {
             NorthSouthAxis::North => "bottom",
             NorthSouthAxis::South => "top",
@@ -67,14 +67,14 @@ impl NorthSouthAxis {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix, Bounded, Enumerable)]
 pub enum EastWestAxis {
     East,
     West,
 }
 
 impl EastWestAxis {
-    pub fn file_modifier(&self) -> &'static str {
+    pub fn file_modifier(self) -> &'static str {
         match self {
             EastWestAxis::East => "right",
             EastWestAxis::West => "left"
@@ -82,14 +82,14 @@ impl EastWestAxis {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix, Bounded, Enumerable)]
 pub enum Orientation {
     Horizontal,
     Vertical,
 }
 
 impl Orientation {
-    pub fn file_modifier(&self) -> &'static str {
+    pub fn file_modifier(self) -> &'static str {
         match self {
             Orientation::Horizontal => "horizontal",
             Orientation::Vertical => "vertical",
@@ -97,7 +97,7 @@ impl Orientation {
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix,Bounded,Enumerable)]
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, TomlFix, Bounded, Enumerable)]
 pub enum WallType {
     Single { facing: Direction },
     Double { orientation: Orientation },
@@ -109,20 +109,20 @@ pub enum WallType {
 }
 
 impl WallType {
-    pub fn file_modifier(&self) -> String {
+    pub fn file_modifier(self) -> String {
         match self {
             WallType::Lone => "rock".to_string(),
             WallType::Center => "center".to_string(),
-            WallType::Single { facing } => format!("single_{}",facing.file_modifier()),
-            WallType::Double { orientation } => format!("double_{}",orientation.file_modifier()),
+            WallType::Single { facing } => format!("single_{}", facing.file_modifier()),
+            WallType::Double { orientation } => format!("double_{}", orientation.file_modifier()),
             WallType::Corner { north_south_facing, east_west_facing } => { format!("{}{}_{}", if false { "inner_" } else { "" }, north_south_facing.file_modifier(), east_west_facing.file_modifier()) }
-            WallType::End { facing } => {format!("end_{}",facing.file_modifier())}
+            WallType::End { facing } => { format!("end_{}", facing.file_modifier()) }
         }
     }
 }
 
 
-#[derive(Debug,Ord, PartialOrd, Eq, PartialEq, TomlFix, Bounded,Enumerable)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, TomlFix, Bounded, Enumerable)]
 pub enum TileTextureIndex {
     Wall { kind: WallType },
     Path,
@@ -157,22 +157,24 @@ impl TileType {
         }
     }
 
-    pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState)->()>> {
+    pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState) -> ()>> {
         match self {
-            TileType::Goal {active:true} => {
+            TileType::Goal { active: true } => {
                 println!("Goal reached!");
                 None
             }
-            TileType::Button {pressed,inverted,target} => {
+            TileType::Button { pressed, inverted, target } => {
                 println!("Stepping on a Button");
                 *pressed = !*pressed;
-                let power = *pressed^*inverted;
-                let  t = target.clone();
-                Some(Box::new(move |game:&mut GameState|{
-                    game.level_state.tile_map.get_mut(&t).map(|tile| tile.apply_button(power));
+                let power = *pressed ^ *inverted;
+                let t = *target;
+                Some(Box::new(move |game: &mut GameState| {
+                    if let Some(tile) = game.level_state.tile_map.get_mut(&t) {
+                        tile.apply_button(power)
+                    }
                 }))
             }
-            _ => {None}
+            _ => { None }
         }
     }
 
@@ -187,7 +189,7 @@ impl TileType {
                                      (coord.y as f64) * TILE_SIZE - state.position.y - TILE_SIZE / 2.0);
 
         if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
-            let transform = adjusted.scale(TILE_SIZE / texture.get_width() as f64, TILE_SIZE / texture.get_height() as f64).transform;
+            let transform = adjusted.scale(TILE_SIZE / f64::from(texture.get_width()), TILE_SIZE / f64::from(texture.get_height())).transform;
             image(texture, transform, gl)
         } else {
             rectangle(D_RED, rect, adjusted.transform, gl)
@@ -232,26 +234,26 @@ impl TileTextureIndex {
             TileTextureIndex::Start => "start".to_string(),
             TileTextureIndex::Goal { active } => format!("goal{}", if !active { "_inactive" } else { "" }),
             // we should never need a texture for a hidden and closed gate because it is hidden
-            TileTextureIndex::Gate { open, facing } => format!("{}_gate_{}", if *open {  "open"  } else { "closed" }, facing.file_modifier()),
+            TileTextureIndex::Gate { open, facing } => format!("{}_gate_{}", if *open { "open" } else { "closed" }, facing.file_modifier()),
             TileTextureIndex::Ladder => "ladder".to_string(),
-            TileTextureIndex::OneWay { facing} => format!("one_way{}", facing.file_modifier()),
+            TileTextureIndex::OneWay { facing } => format!("one_way{}", facing.file_modifier()),
             TileTextureIndex::Wall { kind } => { format!("wall_{}", kind.file_modifier()) }
             TileTextureIndex::Button { pressed } => { format!("button{}", if *pressed { "_pressed" } else { "" }) }
         }
     }
 }
 
-#[derive(Debug,Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Deserialize, Serialize)]
 pub struct ObjectCoordinate {
     pub x: i64,
     pub y: i64,
 }
 
-#[derive(Debug,Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Connections { pub up: bool, pub down: bool, pub left: bool, pub right: bool }
 
 
-#[derive(Debug,Clone, TomlFix)]
+#[derive(Debug, Clone, TomlFix)]
 pub enum GateVisibility {
     Visible,
     Hidden(#[clone] Box<level::TileType>),

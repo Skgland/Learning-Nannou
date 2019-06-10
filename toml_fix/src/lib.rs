@@ -7,6 +7,7 @@ use syn;
 
 mod derive_macros;
 
+#[allow(clippy::let_and_return)]
 #[proc_macro_derive(TomlFix,attributes(clone))]
 pub fn toml_fix_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree

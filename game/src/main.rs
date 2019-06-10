@@ -62,7 +62,7 @@ fn main() -> Result<(), toml::ser::Error> {
 
     println!("Construction app!");
     // Create a new game and run it.
-    let mut app = create_app(ui).map_err(|err| Custom(err))?;
+    let mut app = create_app(ui).map_err( Custom)?;
 
 
     println!("Creating render Context!");
@@ -79,7 +79,7 @@ fn main() -> Result<(), toml::ser::Error> {
         if let Event::Input(i) = e {
             app.input(i, &mut window);
         } else {
-            e.update(|u| app.update(u, &mut window));
+            e.update(|u| app.update(*u, &mut window));
         }
     }
 
@@ -92,7 +92,7 @@ struct TextCache<'font> {
     text_texture_cache: Texture,
 }
 
-fn create_text_cache<'font>(_: &()) -> TextCache {
+fn create_text_cache(_: &()) -> TextCache {
     // Create a texture to use for efficiently caching text on the GPU.
     let text_vertex_data: Vec<u8> = Vec::new();
     let (glyph_cache, text_texture_cache) = {
@@ -131,7 +131,7 @@ fn get_asset_path() -> PathBuf {
 fn create_ui() -> Ui {
 
     //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
+    let mut ui = conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)])
         .build();
 
 
@@ -151,7 +151,7 @@ fn load_levels() -> Result<Vec<LevelTemplate>, &'static str> {
 
     if !path.exists() {
         //path does not exist try to create it
-        if let Err(_) = std::fs::create_dir_all(&path) {
+        if std::fs::create_dir_all(&path).is_err() {
             return Err("assets/level folder doesn't exist and couldn't be created");
         }
     }
@@ -180,7 +180,7 @@ fn load_level(path: &std::path::Path) -> Result<LevelTemplate, toml::de::Error> 
     use serde::Deserialize;
     use game::*;
 
-    if let Err(_) = File::open(path).unwrap().read_to_end(&mut content) {
+    if File::open(path).unwrap().read_to_end(&mut content).is_err() {
         return toml::de::from_str("Failed to read File!");
     };
 
@@ -205,7 +205,7 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
     }
 
     if let Ok(mut file) = File::create(path) {
-        if let Err(_) = file.write_all(out.as_bytes()) {
+        if  file.write_all(out.as_bytes()).is_err() {
             Err(Custom("Failed to write to file!".to_string()))
         } else {
             Ok(())
@@ -215,7 +215,7 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml:
     }
 }
 
-fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {
+fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
 
     use derive_macros_helpers::Enumerable;
 
@@ -226,7 +226,7 @@ fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> (
 
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) -> () {
+fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) {
 
 
     let assets = get_asset_path();
