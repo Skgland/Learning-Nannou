@@ -160,7 +160,7 @@ impl TileType {
         match self {
             TileType::Goal { active: true } => {
                 println!("Goal reached!");
-                Some(Box::new(|game| ()))
+                Some(Box::new(|game| match game { GameState::GameState {level_template,..} => *game = GameState::Won{level_template:level_template.clone()},_=>()}))
             }
             TileType::Button { pressed, inverted, target } => {
                 println!("Stepping on a Button");
