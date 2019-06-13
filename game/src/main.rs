@@ -3,6 +3,7 @@ extern crate piston_window;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
+extern crate ron;
 
 use piston::window::WindowSettings;
 use piston::event_loop::*;
@@ -27,17 +28,66 @@ use crate::gui::MenuType::LevelSelect;
 use crate::game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
 use crate::game::LevelTemplate;
-use toml::Deserializer;
 use std::fs::File;
 use std::io::Read;
 use serde::ser::Serialize;
-use toml::ser::Error::Custom;
 use std::io::Write;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use graphics::Graphics;
-use std::error::Error;
 
 extern crate find_folder;
+
+pub use error::MainError::{self,*};
+
+mod error {
+
+    use std::fmt::{Display, Formatter};
+
+    #[derive(Debug)]
+    pub enum MainError {
+        SerializeError(ron::ser::Error),
+        DeserializeError(ron::de::Error),
+        IOError(std::io::Error),
+        Custom(String),
+    }
+
+    impl From<ron::ser::Error> for MainError {
+        fn from(se: ron::ser::Error) -> Self {
+            MainError::SerializeError(se)
+        }
+    }
+
+    impl From<std::io::Error> for MainError {
+        fn from(io: std::io::Error) -> Self {
+            MainError::IOError(io)
+        }
+    }
+
+    impl From<ron::de::Error> for MainError {
+        fn from(de: ron::de::Error) -> Self {
+            MainError::DeserializeError(de)
+        }
+    }
+
+    impl From<String> for MainError {
+        fn from(str: String) -> Self {
+            MainError::Custom(str)
+        }
+    }
+
+    impl Display for MainError {
+        fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+            match self {
+                MainError::DeserializeError(e) => Display::fmt(e, f),
+                MainError::SerializeError(e) => Display::fmt(e, f),
+                MainError::IOError(e) => Display::fmt(e,f),
+                MainError::Custom(e) => Display::fmt(e,f),
+            }
+        }
+    }
+}
+
+
 
 //
 //Initial Setting
@@ -49,7 +99,7 @@ const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
-fn main() -> Result<(), toml::ser::Error> {
+fn main() -> Result<(), MainError> {
     let mut window = create_window();
 
     let ui = create_ui();
@@ -62,7 +112,7 @@ fn main() -> Result<(), toml::ser::Error> {
 
     println!("Construction app!");
     // Create a new game and run it.
-    let mut app = create_app(ui).map_err( Custom)?;
+    let mut app = create_app(ui)?;
 
 
     println!("Creating render Context!");
@@ -92,7 +142,7 @@ struct TextCache<'font> {
     text_texture_cache: Texture,
 }
 
-fn create_text_cache(_: &()) -> TextCache {
+fn create_text_cache<'font>(_: &()) -> TextCache {
     // Create a texture to use for efficiently caching text on the GPU.
     let text_vertex_data: Vec<u8> = Vec::new();
     let (glyph_cache, text_texture_cache) = {
@@ -131,7 +181,7 @@ fn get_asset_path() -> PathBuf {
 fn create_ui() -> Ui {
 
     //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)])
+    let mut ui = conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
         .build();
 
 
@@ -151,7 +201,7 @@ fn load_levels() -> Result<Vec<LevelTemplate>, &'static str> {
 
     if !path.exists() {
         //path does not exist try to create it
-        if std::fs::create_dir_all(&path).is_err() {
+        if let Err(_) = std::fs::create_dir_all(&path) {
             return Err("assets/level folder doesn't exist and couldn't be created");
         }
     }
@@ -174,69 +224,59 @@ fn load_levels() -> Result<Vec<LevelTemplate>, &'static str> {
     }
 }
 
-fn load_level(path: &std::path::Path) -> Result<LevelTemplate, toml::de::Error> {
+fn load_level(path: &std::path::Path) -> Result<LevelTemplate, MainError> {
+
     let mut content = vec![];
 
     use serde::Deserialize;
     use game::*;
 
-    if File::open(path).unwrap().read_to_end(&mut content).is_err() {
-        return toml::de::from_str("Failed to read File!");
-    };
+    File::open(path).unwrap().read_to_end(&mut content)?;
 
-    let smthg = String::from_utf8_lossy(content.as_slice()).to_string();
-    let mut des = Deserializer::new(smthg.as_str());
+    let mut des = ron::de::Deserializer::from_bytes(content.as_slice())?;
 
-    LevelTemplate::deserialize(&mut des)
+    let level = LevelTemplate::deserialize(&mut des)?;
+    Ok(level)
+
 }
+fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainError> {
 
-fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), toml::ser::Error> {
-    let mut out = String::new();
-
-    let mut serializer = toml::ser::Serializer::new(&mut out);
+    let mut serializer = ron::ser::Serializer::new(None,true);
 
     level.serialize(&mut serializer)?;
+
+    let out = serializer.into_output_string();
 
     if let Some(parent) = path.parent() {
         //path does not exist try to create it
         if !parent.exists() {
-            std::fs::create_dir_all(parent).map_err(|err| Custom(err.description().to_string()))?
+            std::fs::create_dir_all(parent)?
         }
     }
 
-    if let Ok(mut file) = File::create(path) {
-        if  file.write_all(out.as_bytes()).is_err() {
-            Err(Custom("Failed to write to file!".to_string()))
-        } else {
-            Ok(())
-        }
-    } else {
-        Err(Custom("Failed to write to File!".to_string()))
-    }
+    let mut file = File::create(path)?;
+    file.write_all(out.as_bytes())?;
+    Ok(())
+
 }
 
-fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
-
+fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {
     use derive_macros_helpers::Enumerable;
 
-    for tile_index in TileTextureIndex::enumerate_all(){
+    for tile_index in TileTextureIndex::enumerate_all() {
         let file_name = tile_index.file_name();
-        load_texture_into_map(texture_map,tile_index,&file_name);
+        load_texture_into_map(texture_map, tile_index, &file_name);
     }
-
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) {
-
-
+fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) -> () {
     let assets = get_asset_path();
-    let path = assets.join("textures").join(format!("{}.png",name));
+    let path = assets.join("textures").join(format!("{}.png", name));
     let settings = TextureSettings::new();
     if let Ok(texture) = Texture::from_path(&path, &settings) {
         texture_map.insert(key, texture);
-    }else {
-
-        eprintln!("Failed loading Texture with Index: {:?} , at: {}.png", &key,name);
+    } else {
+        eprintln!("Failed loading Texture with Index: {:?} , at: {}.png", &key, name);
     }
 }
 

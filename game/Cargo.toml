@@ -7,19 +7,19 @@ edition = "2018"
 [dependencies]
 derive_macros = {path="../derive_macros"}
 derive_macros_helpers = {path="../derive_macros_helpers"}
-toml_fix = {path="../toml_fix"}
-toml_fix_helpers = {path="../toml_fix_helpers"}
-piston = "0.42"
-piston2d-graphics = "0.30"
-pistoncore-glutin_window = "0.54"
-piston2d-opengl_graphics = "0.59"
-conrod_core = "0.63"
-conrod_piston = "0.63"
-piston_window = "0.89"
-find_folder = "0.3"
-rusttype = "0.7"
-gfx_device_gl = "0.16"
-gfx_core = "0.9"
-vecmath = "0.3"
+#toml_fix = {path="../toml_fix"}
+#toml_fix_helpers = {path="../toml_fix_helpers"}
+piston = "0.42.0"
+piston2d-graphics = "0.30.0"
+pistoncore-glutin_window = "0.54.0"
+piston2d-opengl_graphics = "0.59.0"
+conrod_core = "0.63.0"
+conrod_piston = "0.63.0"
+piston_window = "0.89.0"
+find_folder = "0.3.0"
+rusttype = "0.7.5"
+gfx_device_gl = "0.16.0"
+gfx_core = "0.9.0"
+vecmath = "0.3.1"
 serde = {version = "1.0", features= ["derive"]}
-toml = "0.5"
+ron="0.5.1"
