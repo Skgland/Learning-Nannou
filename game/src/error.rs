@@ -37,8 +37,8 @@ impl Display for MainError {
         match self {
             MainError::DeserializeError(e) => Display::fmt(e, f),
             MainError::SerializeError(e) => Display::fmt(e, f),
-            MainError::IOError(e) => Display::fmt(e,f),
-            MainError::Custom(e) => Display::fmt(e,f),
+            MainError::IOError(e) => Display::fmt(e, f),
+            MainError::Custom(e) => Display::fmt(e, f),
         }
     }
 }
