@@ -18,6 +18,7 @@ use serde::{
 pub use level::*;
 use crate::TextureMap;
 
+pub mod test_level;
 pub mod level;
 pub mod color;
 
