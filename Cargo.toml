@@ -2,8 +2,7 @@
 members = ["game"
     ,"derive_macros"
     ,"derive_macros_helpers"
-    ,"toml_fix"
-    ,"toml_fix_helpers"]
+    ]
 
 
 

@@ -1,5 +1,5 @@
 /target
 **/*.rs.bk
 /.idea/
-*.level
+*.level.ron
 **tmp.rs
