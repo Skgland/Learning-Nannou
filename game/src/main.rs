@@ -105,7 +105,7 @@ fn main() -> Result<(), MainError> {
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-    if let Err(e) = save_level(get_asset_path().join("levels").join("test.level").as_path(), &gui::test_level()) {
+    if let Err(e) = save_level(get_asset_path().join("levels").join("test.level.ron").as_path(), &gui::test_level()) {
         eprintln!("{}", e);
     }
 
@@ -241,7 +241,15 @@ fn load_level(path: &std::path::Path) -> Result<LevelTemplate, MainError> {
 }
 fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainError> {
 
-    let mut serializer = ron::ser::Serializer::new(None,true);
+    let pretty = ron::ser::PrettyConfig{
+        depth_limit: !0,
+        new_line: "\n".to_string(),
+        indentor: "\t".to_string(),
+        separate_tuple_members: false,
+        enumerate_arrays: false,
+    };
+
+    let mut serializer = ron::ser::Serializer::new(Some(pretty),true);
 
     level.serialize(&mut serializer)?;
 
