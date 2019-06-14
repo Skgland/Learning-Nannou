@@ -160,7 +160,11 @@ impl TileType {
         match self {
             TileType::Goal { active: true } => {
                 println!("Goal reached!");
-                Some(Box::new(|game| match game { GameState::GameState {level_template,..} => *game = GameState::Won{level_template:level_template.clone()},_=>()}))
+                Some(Box::new(|game|
+                    if let GameState::GameState { level_template, .. } = game {
+                        *game = GameState::Won { level_template: level_template.clone() }
+                    }
+                ))
             }
             TileType::Button { pressed, inverted, target } => {
                 println!("Stepping on a Button");
@@ -260,4 +264,128 @@ pub struct Connections { pub up: bool, pub down: bool, pub left: bool, pub right
 pub enum GateVisibility {
     Visible,
     Hidden(Box<level::TileType>),
+}
+
+pub mod saving {
+    use crate::game::LevelTemplate;
+    use serde::ser::Serialize;
+    use std::fs::File;
+    use std::io::Write;
+    use std::fmt::{Display, Formatter};
+
+    pub enum SavingError {
+        IO(std::io::Error),
+        Serialize(ron::ser::Error),
+    }
+
+    impl Display for SavingError {
+        fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+            match self {
+                SavingError::IO(err) => Display::fmt(err,f),
+                SavingError::Serialize(err) => Display::fmt(err,f),
+            }
+        }
+    }
+
+    impl From<std::io::Error> for SavingError {
+        fn from(io_err: std::io::Error) -> Self {
+            SavingError::IO(io_err)
+        }
+    }
+
+    impl From<ron::ser::Error> for SavingError {
+        fn from(ser_err: ron::ser::Error) -> Self {
+            SavingError::Serialize(ser_err)
+        }
+    }
+
+    pub(crate) fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), SavingError> {
+        let pretty = ron::ser::PrettyConfig {
+            depth_limit: !0,
+            new_line: "\n".to_string(),
+            indentor: "\t".to_string(),
+            separate_tuple_members: false,
+            enumerate_arrays: false,
+        };
+
+        let mut serializer = ron::ser::Serializer::new(Some(pretty), true);
+
+        level.serialize(&mut serializer)?;
+
+        let out = serializer.into_output_string();
+
+        if let Some(parent) = path.parent() {
+            //path does not exist try to create it
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?
+            }
+        }
+
+        let mut file = File::create(path)?;
+        file.write_all(out.as_bytes())?;
+        Ok(())
+    }
+}
+
+pub mod loading {
+    use crate::game::LevelTemplate;
+    use std::fs::File;
+    use std::io::Read;
+
+    pub enum LoadingError {
+        IO(std::io::Error),
+        Deserialize(ron::de::Error),
+    }
+
+    impl From<std::io::Error> for LoadingError {
+        fn from(io_err: std::io::Error) -> Self {
+            LoadingError::IO(io_err)
+        }
+    }
+
+
+    impl From<ron::de::Error> for LoadingError {
+        fn from(de_err: ron::de::Error) -> Self {
+            LoadingError::Deserialize(de_err)
+        }
+    }
+
+    pub(crate) fn load_levels(asset_path: &std::path::Path) -> Result<Vec<LevelTemplate>, LoadingError> {
+        let path = asset_path.join("levels");
+        let mut levels = vec![];
+
+        if !path.exists() {
+            //path does not exist try to create it
+            std::fs::create_dir_all(&path)?;
+        }
+
+        let dir = path.read_dir()?;
+
+        for entry in dir {
+            if let Ok(entry) = entry {
+                if let Ok(f_type) = entry.file_type() {
+                    if f_type.is_file() {
+                        if let Ok(level) = load_level(entry.path().as_path()) {
+                            levels.push(level);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(levels)
+    }
+
+
+    fn load_level(path: &std::path::Path) -> Result<LevelTemplate, LoadingError> {
+        let mut content = vec![];
+
+        use serde::Deserialize;
+
+        File::open(path)?.read_to_end(&mut content)?;
+
+        let mut des = ron::de::Deserializer::from_bytes(content.as_slice())?;
+
+        let level = LevelTemplate::deserialize(&mut des)?;
+        Ok(level)
+    }
 }

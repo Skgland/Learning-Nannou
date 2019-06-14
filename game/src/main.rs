@@ -24,14 +24,14 @@ use conrod_core::Ui;
 use rusttype::gpu_cache::Cache;
 use opengl_graphics::Texture;
 use glutin_window::GlutinWindow;
-use crate::gui::MenuType::LevelSelect;
+
 use crate::game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
-use crate::game::LevelTemplate;
-use std::fs::File;
-use std::io::Read;
-use serde::ser::Serialize;
-use std::io::Write;
+
+
+
+
+
 use std::path::PathBuf;
 use graphics::Graphics;
 
@@ -58,7 +58,7 @@ fn main() -> Result<(), MainError> {
     let ui = create_ui();
 
     println!("Writing test level to disc!");
-    if let Err(e) = save_level(get_asset_path().join("levels").join("test.level.ron").as_path(), &game::test_level::test_level()) {
+    if let Err(e) = game::level::saving::save_level(get_asset_path().join("levels").join("test.level.ron").as_path(), &game::test_level::test_level()) {
         eprintln!("{}", e);
     }
 
@@ -95,7 +95,7 @@ struct TextCache<'font> {
     text_texture_cache: Texture,
 }
 
-fn create_text_cache<'font>(_: &()) -> TextCache {
+fn create_text_cache(_: &()) -> TextCache {
     // Create a texture to use for efficiently caching text on the GPU.
     let text_vertex_data: Vec<u8> = Vec::new();
     let (glyph_cache, text_texture_cache) = {
@@ -134,7 +134,7 @@ fn get_asset_path() -> PathBuf {
 fn create_ui() -> Ui {
 
     //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([INIT_WIDTH as f64, INIT_HEIGHT as f64])
+    let mut ui = conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)])
         .build();
 
 
@@ -147,78 +147,7 @@ fn create_ui() -> Ui {
 
 type TextureMap<G> = std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
 
-fn load_levels() -> Result<Vec<LevelTemplate>, &'static str> {
-    let assets = get_asset_path();
-    let path = assets.join("levels");
-    let mut levels = vec![];
-
-    if !path.exists() {
-        //path does not exist try to create it
-        if let Err(_) = std::fs::create_dir_all(&path) {
-            return Err("assets/level folder doesn't exist and couldn't be created");
-        }
-    }
-
-    if let Ok(dir) = path.read_dir() {
-        for entry in dir {
-            if let Ok(entry) = entry {
-                if let Ok(f_type) = entry.file_type() {
-                    if f_type.is_file() {
-                        if let Ok(level) = load_level(entry.path().as_path()) {
-                            levels.push(level);
-                        }
-                    }
-                }
-            }
-        }
-        Ok(levels)
-    } else {
-        Err("Expected assets/levels to be a folder, but it wasn't!")
-    }
-}
-
-fn load_level(path: &std::path::Path) -> Result<LevelTemplate, MainError> {
-    let mut content = vec![];
-
-    use serde::Deserialize;
-    use game::*;
-
-    File::open(path).unwrap().read_to_end(&mut content)?;
-
-    let mut des = ron::de::Deserializer::from_bytes(content.as_slice())?;
-
-    let level = LevelTemplate::deserialize(&mut des)?;
-    Ok(level)
-}
-
-fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainError> {
-    let pretty = ron::ser::PrettyConfig {
-        depth_limit: !0,
-        new_line: "\n".to_string(),
-        indentor: "\t".to_string(),
-        separate_tuple_members: false,
-        enumerate_arrays: false,
-    };
-
-    let mut serializer = ron::ser::Serializer::new(Some(pretty), true);
-
-    level.serialize(&mut serializer)?;
-
-    let out = serializer.into_output_string();
-
-    if let Some(parent) = path.parent() {
-        //path does not exist try to create it
-        if !parent.exists() {
-            std::fs::create_dir_all(parent)?
-        }
-    }
-
-    let mut file = File::create(path)?;
-    file.write_all(out.as_bytes())?;
-    Ok(())
-}
-
-fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {
+fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>)  {
     use derive_macros_helpers::Enumerable;
 
     for tile_index in TileTextureIndex::enumerate_all() {
@@ -227,7 +156,7 @@ fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> (
     }
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) -> () {
+fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str)  {
     let assets = get_asset_path();
     let path = assets.join("textures").join(format!("{}.png", name));
     let settings = TextureSettings::new();
@@ -253,11 +182,13 @@ fn create_app(mut ui: Ui) -> Result<App, String> {
 
     load_textures(&mut texture_map);
 
-    let level_list = load_levels()?;
-
     // Instantiate the generated list of widget identifiers.
     let generator = ui.widget_id_generator();
     let ids = Ids::new(generator);
+
+    let mut init_menu = MenuState::MainMenu;
+
+    init_menu.open_level_selection();
 
     Ok(App::new(
         GUI {
@@ -265,9 +196,8 @@ fn create_app(mut ui: Ui) -> Result<App, String> {
             ids,
             image_ids: vec![],
             image_map,
-            active_menu: GUIVisibility::MenuOnly(LevelSelect),
             fullscreen: false,
-        }, texture_map, level_list,
+        }, texture_map, init_menu,
     ))
 }
 

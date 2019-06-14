@@ -16,6 +16,10 @@ use serde::{
 
 pub use level::*;
 use crate::TextureMap;
+use conrod_core::input::{RenderArgs, Key};
+use std::rc::Rc;
+use std::collections::BTreeSet;
+use std::cell::RefCell;
 
 pub mod test_level;
 pub mod level;
@@ -31,18 +35,22 @@ pub struct PlayerCoordinate {
 #[derive(Clone, Debug)]
 pub enum GameState {
     Won {
-        level_template: level::LevelTemplate,
+        level_template: Rc<level::LevelTemplate>,
     },
     GameState {
         //current angle of the rotating square
         rotation: f64,
+
+        show_hud:bool,
+
+        keys_down: Rc<RefCell<BTreeSet<Key>>>,
 
         //x and y offset of the rotating square
         position: PlayerCoordinate,
         old_position: ObjectCoordinate,
 
         //current level
-        level_template: level::LevelTemplate,
+        level_template: Rc<level::LevelTemplate>,
         level_state: level::LevelState,
     },
 }
@@ -60,10 +68,12 @@ impl From<&mut PlayerCoordinate> for ObjectCoordinate {
 }
 
 impl GameState {
-    pub fn new(level: level::LevelTemplate) -> GameState {
+    pub fn new(level: Rc<level::LevelTemplate>) -> GameState {
         GameState::GameState {
             // Rotation for the square.
             rotation: 0.0,
+            show_hud: true,
+            keys_down: Rc::new(RefCell::new(BTreeSet::new())),
             position: PlayerCoordinate { x: 0.0, y: 0.0 },
             old_position: ObjectCoordinate { x: 0, y: 0 },
 
@@ -83,6 +93,28 @@ impl GameState {
                 }
             }
         }
+    }
+
+    pub fn draw_game<G:Graphics>(&self,args: &RenderArgs, context:Context, gl:&mut G, texture_map: &TextureMap<G>){
+
+            if let GameState::GameState { level_state, .. } = self {
+                let (x, y) = (args.width / 2.0,
+                              args.height / 2.0);
+
+                let c = context.trans(x, y);
+
+
+                for (coord, tile) in &level_state.tile_map {
+                    tile.draw_tile(c, gl, texture_map, coord, self);
+                }
+
+                // Draw a box rotating around the middle of the screen.
+
+                self.draw_player(c, gl, texture_map);
+            }
+
+
+        use ::graphics::*;
     }
 
     pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>) {
