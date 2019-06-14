@@ -37,7 +37,7 @@ use graphics::Graphics;
 
 extern crate find_folder;
 
-pub use error::MainError::{self,*};
+pub use error::MainError::{self, *};
 
 mod error;
 
@@ -178,7 +178,6 @@ fn load_levels() -> Result<Vec<LevelTemplate>, &'static str> {
 }
 
 fn load_level(path: &std::path::Path) -> Result<LevelTemplate, MainError> {
-
     let mut content = vec![];
 
     use serde::Deserialize;
@@ -190,11 +189,10 @@ fn load_level(path: &std::path::Path) -> Result<LevelTemplate, MainError> {
 
     let level = LevelTemplate::deserialize(&mut des)?;
     Ok(level)
-
 }
-fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainError> {
 
-    let pretty = ron::ser::PrettyConfig{
+fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainError> {
+    let pretty = ron::ser::PrettyConfig {
         depth_limit: !0,
         new_line: "\n".to_string(),
         indentor: "\t".to_string(),
@@ -202,7 +200,7 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainE
         enumerate_arrays: false,
     };
 
-    let mut serializer = ron::ser::Serializer::new(Some(pretty),true);
+    let mut serializer = ron::ser::Serializer::new(Some(pretty), true);
 
     level.serialize(&mut serializer)?;
 
@@ -218,7 +216,6 @@ fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), MainE
     let mut file = File::create(path)?;
     file.write_all(out.as_bytes())?;
     Ok(())
-
 }
 
 fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) -> () {

@@ -3,7 +3,7 @@
 use std::collections::btree_set::BTreeSet;
 use derive_macros::*;
 
-use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState,  game::LevelTemplate, TextureMap};
+use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState, game::LevelTemplate, TextureMap};
 use conrod_core::{
     Borderable,
     color::Colorable,
@@ -13,12 +13,12 @@ use conrod_core::{
     widget::Widget,
 };
 
-use opengl_graphics::{GlGraphics};
+use opengl_graphics::GlGraphics;
 use piston::input::*;
 pub use piston::window::*;
 use piston_window::{texture::UpdateTexture, PistonWindow};
 use glutin_window::GlutinWindow;
-use graphics::{Context};
+use graphics::Context;
 use std::collections::btree_map::BTreeMap;
 
 pub struct App {
@@ -38,11 +38,13 @@ pub enum Action {
 
 impl Action {
     pub fn perform(&self, state: &mut GameState) {
-        match self {
-            Action::UP => state.position.y -= 0.5,
-            Action::DOWN => state.position.y += 0.5,
-            Action::LEFT => state.position.x -= 0.5,
-            Action::RIGHT => state.position.x += 0.5,
+        if let GameState::GameState { position, .. } = state {
+            match self {
+                Action::UP => position.y -= 0.5 / 64.0,
+                Action::DOWN => position.y += 0.5 / 64.0,
+                Action::LEFT => position.x -= 0.5 / 64.0,
+                Action::RIGHT => position.x += 0.5 / 64.0,
+            }
         }
     }
 }
@@ -50,8 +52,6 @@ impl Action {
 type G = opengl_graphics::GlGraphics;
 
 impl App {
-
-
     pub fn new(gui: GUI, texture_map: TextureMap<G>, level_list: Vec<LevelTemplate>) -> Self {
         App { gui, keys_down: BTreeSet::new(), texture_map, level_list }
     }
@@ -118,21 +118,21 @@ impl App {
         if
         let HUD(state)
         | GameOnly(state) | OverlayMenu(_, state) = &self.gui.active_menu {
-            let GameState { level_state, .. } = &state;
+            if let GameState::GameState { level_state, .. } = &state {
+                let (x, y) = (args.width / 2.0,
+                              args.height / 2.0);
 
-            let (x, y) = (args.width / 2.0,
-                          args.height / 2.0);
-
-            let c = c.trans(x, y);
+                let c = c.trans(x, y);
 
 
-            for (coord, tile) in &level_state.tile_map {
-                tile.draw_tile(c, gl, &self.texture_map, coord, &state);
+                for (coord, tile) in &level_state.tile_map {
+                    tile.draw_tile(c, gl, &self.texture_map, coord, &state);
+                }
+
+                // Draw a box rotating around the middle of the screen.
+
+                state.draw_player(c, gl, &self.texture_map);
             }
-
-            // Draw a box rotating around the middle of the screen.
-
-            state.draw_player(c, gl, &self.texture_map);
         }
 
         use graphics::*;
@@ -210,8 +210,10 @@ impl App {
 
         match &mut self.gui.active_menu {
             //update game state while in game
-            HUD(state) | GameOnly(state) => {
-                state.rotation += 8.0 * args.dt;
+            HUD(state, ..) | GameOnly(state) => {
+                if let GameState::GameState { rotation, .. } = state {
+                    *rotation += 8.0 * args.dt;
+                }
                 let keys_down = &self.keys_down;
                 key_map.iter().filter(|(&k, _)| keys_down.contains(&k)).for_each(|(_, action)| action.perform(state));
                 state.handle_input()
@@ -225,7 +227,7 @@ impl App {
             HUD(_) => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.main_canvas).set(self.gui.ids.menu_title, ui),
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
-                if let Some(menu) = menu.update(ui, &mut self.gui.ids,&self.level_list) {
+                if let Some(menu) = menu.update(ui, &mut self.gui.ids, &self.level_list) {
                     self.gui.active_menu = menu;
                 }
             }

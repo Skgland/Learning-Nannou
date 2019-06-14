@@ -38,7 +38,7 @@ widget_ids! {
     }
 }
 
-pub struct RenderContext<'font,G:Graphics> {
+pub struct RenderContext<'font, G: Graphics> {
     pub gl: G,
     pub text_texture_cache: opengl_graphics::Texture,
     pub text_vertex_data: Vec<u8>,
@@ -81,14 +81,14 @@ impl Debug for GUIVisibility {
             }
             MenuOnly(menu) |
             OverlayMenu(menu, _) => {
-                Debug::fmt(&menu.menu_name(),f)
+                Debug::fmt(&menu.menu_name(), f)
             }
         }
     }
 }
 
 impl GUIVisibility {
-    pub fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>)  {
+    pub fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) {
         match self {
             GUIVisibility::GameOnly(state) => {
                 *self = GUIVisibility::HUD(state.clone())
@@ -111,7 +111,7 @@ impl GUIVisibility {
 
 impl Display for GUIVisibility {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        Debug::fmt(self,f)
+        Debug::fmt(self, f)
     }
 }
 
@@ -128,16 +128,16 @@ pub enum MenuType {
 
 impl Display for MenuType {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        Debug::fmt(self,f)
+        Debug::fmt(self, f)
     }
 }
 
 pub trait Menu: Debug {
     fn menu_name(&self) -> String;
 
-    fn handle_input(&self) ;
+    fn handle_input(&self);
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list:&[LevelTemplate]) -> Option<GUIVisibility>;
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids, level_list: &[LevelTemplate]) -> Option<GUIVisibility>;
 
     fn back(&self) -> Option<GUIVisibility>;
 }
@@ -148,12 +148,13 @@ impl Menu for MenuType {
             MenuType::Main => String::from("Main Menu"),
             MenuType::Pause => String::from("Pause Menu"),
             MenuType::LevelSelect => String::from("Level Selection"),
-            MenuType::Editor(GameState{level_template,..}) => format!("Level Editor: {}",level_template.name),
+            MenuType::Editor(GameState::GameState { level_template, .. })
+            | MenuType::Editor(GameState::Won { level_template, .. }) => format!("Level Editor: {}", level_template.name),
             MenuType::Custom(menu) => menu.menu_name(),
         }
     }
 
-    fn handle_input(&self)  {
+    fn handle_input(&self) {
         match self {
             MenuType::Main => unimplemented!(),
             MenuType::Pause => unimplemented!(),
@@ -163,19 +164,19 @@ impl Menu for MenuType {
         }
     }
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids,level_list: &[LevelTemplate]) -> Option<GUIVisibility> {
+    fn update(&self, ui: &mut UiCell, ids: &mut Ids, level_list: &[LevelTemplate]) -> Option<GUIVisibility> {
         match self {
-            MenuType::Custom(menu) => menu.update(ui, ids,level_list),
-            MenuType::Editor(_) =>{
+            MenuType::Custom(menu) => menu.update(ui, ids, level_list),
+            MenuType::Editor(_) => {
                 None
             }
             MenuType::Pause => {
                 widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
-                                     .label_font_size(30)
-                                     .middle_of(ids.main_canvas)
-                                     .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
-                                     .set(ids.contiue_button, ui);
+                    .label_font_size(30)
+                    .middle_of(ids.main_canvas)
+                    .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
+                    .set(ids.contiue_button, ui);
                 None
             }
             MenuType::LevelSelect => {
@@ -187,8 +188,8 @@ impl Menu for MenuType {
 
                 let mut result = None;
 
-                for (button_id,level) in ids.level_buttons.iter().zip(level_list.iter()) {
-                    let clicked = widget::Button::new().label(&level.name).set(*button_id,ui);
+                for (button_id, level) in ids.level_buttons.iter().zip(level_list.iter()) {
+                    let clicked = widget::Button::new().label(&level.name).set(*button_id, ui);
                     if clicked.was_clicked() {
                         let state = GameState::new(level.clone());
                         result = Some(HUD(state))

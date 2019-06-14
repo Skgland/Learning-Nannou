@@ -3,7 +3,6 @@ use crate::game::level::LevelTemplate;
 
 
 pub fn test_level() -> LevelTemplate {
-
     use crate::game::level::*;
     use Orientation::*;
     use WallType::*;
