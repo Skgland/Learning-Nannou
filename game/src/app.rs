@@ -1,13 +1,12 @@
 #![allow(dead_code, unused_variables)]
 
-use std::collections::btree_set::BTreeSet;
+
 use derive_macros::*;
 
-use crate::{gui::*, gui::GUIVisibility::HUD, gui::GUIVisibility::GameOnly, gui::GUIVisibility::OverlayMenu, game::GameState, game::LevelTemplate, TextureMap};
+use crate::{gui::*,  game::GameState, TextureMap};
 use conrod_core::{
     Borderable,
     color::Colorable,
-    position::Positionable,
     input::RenderArgs,
     widget,
     widget::Widget,
@@ -18,14 +17,11 @@ use piston::input::*;
 pub use piston::window::*;
 use piston_window::{texture::UpdateTexture, PistonWindow};
 use glutin_window::GlutinWindow;
-use graphics::Context;
-use std::collections::btree_map::BTreeMap;
 
 pub struct App {
     pub gui: GUI,
     pub texture_map: TextureMap<opengl_graphics::GlGraphics>,
-    pub level_list: Vec<LevelTemplate>,
-    keys_down: BTreeSet<Key>,
+    pub current_menu: MenuState,
 }
 
 #[derive(Bounded)]
@@ -52,12 +48,13 @@ impl Action {
 type G = opengl_graphics::GlGraphics;
 
 impl App {
-    pub fn new(gui: GUI, texture_map: TextureMap<G>, level_list: Vec<LevelTemplate>) -> Self {
-        App { gui, keys_down: BTreeSet::new(), texture_map, level_list }
+
+    pub fn new(gui: GUI, texture_map: TextureMap<G>, init_menu:MenuState) -> Self {
+        App { gui, texture_map, current_menu:init_menu}
     }
 
     pub fn render(&self, context: &mut RenderContext<G>, args: &RenderArgs) {
-        use graphics::*;
+
 
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
         const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
@@ -70,7 +67,7 @@ impl App {
 
         let RenderContext { gl, glyph_cache, text_texture_cache, text_vertex_data, .. } = context;
 
-        let App { gui: GUI { ui, image_map, active_menu, .. }, .. } = self;
+        let App { gui: GUI { ui, image_map, .. }, .. } = self;
 
 
         // A function used for caching glyphs to the texture cache.
@@ -86,18 +83,8 @@ impl App {
 
 
         gl.draw(args.viewport(), |c, gl| {
-            match active_menu {
-                GUIVisibility::HUD(_) | GUIVisibility::GameOnly(_) => {
-                    // Clear the screen.
-                    clear(super::game::color::D_RED, gl);
-                }
-                _ => {
-                    clear(BLUE, gl)
-                }
-            }
 
-            self.render_game(args, c, gl);
-
+            self.current_menu.draw_raw(args,c,gl,&self.texture_map);
 
             let view = c.store_view();
 
@@ -113,47 +100,13 @@ impl App {
         });
     }
 
-
-    fn render_game(&self, args: &RenderArgs, c: Context, gl: &mut GlGraphics) {
-        if
-        let HUD(state)
-        | GameOnly(state) | OverlayMenu(_, state) = &self.gui.active_menu {
-            if let GameState::GameState { level_state, .. } = &state {
-                let (x, y) = (args.width / 2.0,
-                              args.height / 2.0);
-
-                let c = c.trans(x, y);
-
-
-                for (coord, tile) in &level_state.tile_map {
-                    tile.draw_tile(c, gl, &self.texture_map, coord, &state);
-                }
-
-                // Draw a box rotating around the middle of the screen.
-
-                state.draw_player(c, gl, &self.texture_map);
-            }
-        }
-
-        use graphics::*;
-    }
-
     pub fn input(&mut self, event: Input, window: &mut PistonWindow<GlutinWindow>) {
         if let Some(cr_event) = conrod_piston::event::convert(Event::Input(event.clone()), self.gui.ui.win_w, self.gui.ui.win_h) {
             self.gui.ui.handle_event(cr_event);
         }
 
-        match (&self.gui.active_menu, event) {
-            (GUIVisibility::GameOnly(_), Input::Button(ButtonArgs { button: Button::Keyboard(key), state, .. })) |
-            (GUIVisibility::HUD(_), Input::Button(ButtonArgs { button: Button::Keyboard(key), state, .. })) => {
-                match state {
-                    ButtonState::Press => self.keys_down.insert(key),
-                    ButtonState::Release => self.keys_down.remove(&key),
-                };
-                //println!("{:?}", key);
-            }
-            (_, _) => (),
-        };
+        self.current_menu.handle_input(event);
+
     }
 
 
@@ -169,7 +122,6 @@ impl App {
     }
 
     pub fn update(&mut self, args: UpdateArgs, window: &mut PistonWindow<GlutinWindow>) {
-        use GUIVisibility::*;
 
 
         let ui = &mut self.gui.ui.set_widgets();
@@ -181,13 +133,12 @@ impl App {
                     match event {
                         Ui::Release(_, Release { button: Button::Keyboard(Key::F11), .. }) => { Self::toggle_fullscreen(window, &mut self.gui.fullscreen) }
                         Ui::Release(_, Release { button: Button::Keyboard(Key::Escape), .. }) => {
-                            self.gui.active_menu.handle_esc(window);
+                            self.current_menu.handle_esc(window);
                         }
                         Ui::Release(_, Release { button: Button::Keyboard(Key::F1), .. }) => {
-                            if
-                            let HUD(state) | OverlayMenu(_, state) = &mut self.gui.active_menu {
+                            /*if let HUD(state) | OverlayMenu(_, state) = &mut self.gui.active_menu {
                                 self.gui.active_menu = GameOnly(state.clone());
-                            }
+                            }*/
                         }
                         _ => ()
                     }
@@ -198,39 +149,6 @@ impl App {
         //necessary so that when we stop drawing anything in F1 mode, Resize events will still be processed
         widget::canvas::Canvas::new().border_rgba(0.0, 0.0, 0.0, 0.0).rgba(0.0, 0.0, 0.0, 0.0).set(self.gui.ids.main_canvas, ui);
 
-        // Rotate 2 radians per second.
-
-        let mut key_map: BTreeMap<Key, Action> = BTreeMap::new();
-
-        key_map.insert(Key::W, Action::UP);
-        key_map.insert(Key::A, Action::LEFT);
-        key_map.insert(Key::S, Action::DOWN);
-        key_map.insert(Key::D, Action::RIGHT);
-
-
-        match &mut self.gui.active_menu {
-            //update game state while in game
-            HUD(state, ..) | GameOnly(state) => {
-                if let GameState::GameState { rotation, .. } = state {
-                    *rotation += 8.0 * args.dt;
-                }
-                let keys_down = &self.keys_down;
-                key_map.iter().filter(|(&k, _)| keys_down.contains(&k)).for_each(|(_, action)| action.perform(state));
-                state.handle_input()
-            }
-            MenuOnly(..) | OverlayMenu(..) => {}
-        }
-
-
-        match &self.gui.active_menu {
-            GameOnly(_) => (),
-            HUD(_) => widget::Text::new("HUD").font_size(30).mid_top_of(self.gui.ids.main_canvas).set(self.gui.ids.menu_title, ui),
-            MenuOnly(menu) |
-            OverlayMenu(menu, _) => {
-                if let Some(menu) = menu.update(ui, &mut self.gui.ids, &self.level_list) {
-                    self.gui.active_menu = menu;
-                }
-            }
-        }
+         self.current_menu.update(ui,&mut self.gui.ids,args)
     }
 }

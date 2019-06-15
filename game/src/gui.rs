@@ -3,9 +3,7 @@
 use rusttype::gpu_cache::Cache;
 use conrod_core::image::Map;
 use conrod_core::Ui;
-use core::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Error;
+
 use std::fmt::Debug;
 use conrod_core::widget_ids;
 use conrod_core::widget;
@@ -13,15 +11,23 @@ use conrod_core::position::Positionable;
 use conrod_core::Labelable;
 use conrod_core::position::Sizeable;
 use conrod_core::widget::Widget;
+use piston_window::UpdateArgs;
 use conrod_core::UiCell;
 use piston_window::PistonWindow;
 use glutin_window::GlutinWindow;
 use piston::window::Window;
 use crate::game::GameState;
 use crate::game::LevelTemplate;
-use crate::gui::GUIVisibility::HUD;
 use conrod_core::image::Id;
-use graphics::Graphics;
+use graphics::{Graphics, Context, clear};
+use std::path::PathBuf;
+use conrod_core::input::{RenderArgs, Key};
+use crate::TextureMap;
+use std::rc::Rc;
+use crate::gui::MenuState::InGame;
+use crate::app::Action;
+use std::collections::BTreeMap;
+use std::borrow::Cow;
 
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
@@ -50,170 +56,178 @@ pub struct GUI {
     pub image_ids: Vec<Id>,
     pub ui: Ui,
     pub ids: Ids,
-    pub active_menu: GUIVisibility,
     pub fullscreen: bool,
 }
 
-#[allow(dead_code)]
-pub enum GUIVisibility {
-    //*NO GUI VISIBLE (ONLY GAME VISIBLE)
-    GameOnly(GameState),
-    //*NON-INTERACTIVE HUD VISIBLE ON TOP OF GAME
-    //* E.g. Health, Hotbar
-    HUD(GameState),
-    //*INTERACTIVE MENU VISIBLE ON TOP OF GAME
-    //* E.g. Inventory, Pause Menu
-    OverlayMenu(MenuType, GameState),
-    //*ONLY MENU VISIBLE (NO GAME VISIBLE)
-    //* Main Menu, Level Selection, Options
-    MenuOnly(MenuType),
+#[derive(Debug)]
+pub enum MenuState {
+    MainMenu,
+    PauseMenu(GameState),
+    InGame(GameState),
+    LevelSelect(LevelSelectState),
+    Editor(LevelEditorState),
 }
-
-impl Debug for GUIVisibility {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        use self::GUIVisibility::*;
-        match self {
-            GameOnly(_) => {
-                Ok(())
-            }
-            HUD(_) => {
-                Debug::fmt(&String::from("HUD"), f)
-            }
-            MenuOnly(menu) |
-            OverlayMenu(menu, _) => {
-                Debug::fmt(&menu.menu_name(), f)
-            }
-        }
-    }
-}
-
-impl GUIVisibility {
-    pub fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) {
-        match self {
-            GUIVisibility::GameOnly(state) => {
-                *self = GUIVisibility::HUD(state.clone())
-            }
-            GUIVisibility::HUD(state) => {
-                *self = GUIVisibility::OverlayMenu(MenuType::Pause, state.clone())
-            }
-            GUIVisibility::MenuOnly(menu_type) |
-            GUIVisibility::OverlayMenu(menu_type, _) => {
-                let menu = menu_type.back();
-                if let Some(menu) = menu {
-                    *self = menu
-                } else {
-                    window.set_should_close(true);
-                }
-            }
-        }
-    }
-}
-
-impl Display for GUIVisibility {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        Debug::fmt(self, f)
-    }
-}
-
 
 #[derive(Debug)]
-pub enum MenuType {
-    Main,
-    Pause,
-    LevelSelect,
-    Editor(GameState),
-    Custom(Box<dyn Menu>),
+pub struct LevelSelectState(Vec<Rc<LevelTemplate>>);
+
+#[derive(Debug)]
+pub enum LevelEditorState {
+    Empty,
+    Edit { level: LevelTemplate, saved: bool, file: Option<PathBuf> },
+    Testing { level: LevelTemplate, saved: bool, file: Option<PathBuf>, state: GameState },
 }
 
-
-impl Display for MenuType {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        Debug::fmt(self, f)
-    }
-}
 
 pub trait Menu: Debug {
-    fn menu_name(&self) -> String;
+    fn menu_name(&self) -> Cow<'static, str>;
 
-    fn handle_input(&self);
+    fn handle_input(&self, event: piston::input::Input);
 
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids, level_list: &[LevelTemplate]) -> Option<GUIVisibility>;
+    fn draw_raw<G: Graphics>(&self, args: &RenderArgs, context: Context, gl: &mut G, texture_map: &TextureMap<G>);
 
-    fn back(&self) -> Option<GUIVisibility>;
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs);
+
+    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>);
 }
 
-impl Menu for MenuType {
-    fn menu_name(&self) -> String {
+impl MenuState {
+    pub(crate) fn open_level_selection(&mut self) {
+        let levels = crate::game::level::loading::load_levels(crate::get_asset_path().as_path()).unwrap_or_else(|_err| Vec::new()).into_iter().map(Rc::new).collect();
+
+        *self = MenuState::LevelSelect(LevelSelectState(levels));
+    }
+}
+
+
+impl Menu for MenuState {
+    fn menu_name(&self) -> Cow<'static, str> {
         match self {
-            MenuType::Main => String::from("Main Menu"),
-            MenuType::Pause => String::from("Pause Menu"),
-            MenuType::LevelSelect => String::from("Level Selection"),
-            MenuType::Editor(GameState::GameState { level_template, .. })
-            | MenuType::Editor(GameState::Won { level_template, .. }) => format!("Level Editor: {}", level_template.name),
-            MenuType::Custom(menu) => menu.menu_name(),
+            MenuState::MainMenu => Cow::Borrowed("Main Menu"),
+            MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
+            MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
+            MenuState::Editor(LevelEditorState::Empty) => Cow::Borrowed("Level Editor"),
+            MenuState::Editor(LevelEditorState::Edit { level, .. }) => Cow::Owned(format!("Level Editor: editing {}", level.name)),
+            MenuState::Editor(LevelEditorState::Testing { level, .. }) => Cow::Owned(format!("Level Editor: testing {}", level.name)),
+            MenuState::InGame(_) => Cow::Borrowed("")
         }
     }
 
-    fn handle_input(&self) {
+    fn handle_input(&self, event: piston::input::Input) {
+        use piston::input::*;
         match self {
-            MenuType::Main => unimplemented!(),
-            MenuType::Pause => unimplemented!(),
-            MenuType::LevelSelect => unimplemented!(),
-            MenuType::Editor(_) => unimplemented!(),
-            MenuType::Custom(menu) => menu.handle_input()
-        }
-    }
-
-    fn update(&self, ui: &mut UiCell, ids: &mut Ids, level_list: &[LevelTemplate]) -> Option<GUIVisibility> {
-        match self {
-            MenuType::Custom(menu) => menu.update(ui, ids, level_list),
-            MenuType::Editor(_) => {
-                None
+            MenuState::Editor(LevelEditorState::Testing { state, .. }) | MenuState::InGame(state) => {
+                if let GameState::GameState {keys_down,..} = state {
+                    if let piston::input::Input::Button(ButtonArgs { button: Button::Keyboard(key), state: button_state, .. }) = event {
+                        match button_state {
+                            ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
+                            ButtonState::Release => keys_down.try_borrow_mut().unwrap().remove(&key),
+                        };
+                        //println!("{:?}", key);
+                    };
+                }
             }
-            MenuType::Pause => {
+            _ => {}
+        }
+    }
+
+    fn draw_raw<G: Graphics>(&self, args: &RenderArgs, context: Context, gl: &mut G, texture_map: &TextureMap<G>) {
+        match self {
+            MenuState::InGame(game_state) => {
+                clear(crate::game::color::D_RED, gl);
+                game_state.draw_game(args, context, gl, texture_map);
+            }
+            _ => {
+                clear(crate::game::color::BLUE, gl);
+            }
+        }
+    }
+
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs) {
+        match self {
+            MenuState::Editor(_) => {}
+            MenuState::PauseMenu(_state) => {
                 widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
-                    .label_font_size(30)
-                    .middle_of(ids.main_canvas)
-                    .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
-                    .set(ids.contiue_button, ui);
-                None
+                                     .label_font_size(30)
+                                     .middle_of(ids.main_canvas)
+                                     .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
+                                     .set(ids.contiue_button, ui);
             }
-            MenuType::LevelSelect => {
+            MenuState::LevelSelect(level_list) => {
                 widget::Text::new("Level Selection").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
 
 
-                ids.level_buttons.resize(level_list.len(), &mut ui.widget_id_generator());
+                ids.level_buttons.resize(level_list.0.len(), &mut ui.widget_id_generator());
 
 
-                let mut result = None;
-
-                for (button_id, level) in ids.level_buttons.iter().zip(level_list.iter()) {
+                for (button_id, level) in ids.level_buttons.iter().zip(level_list.0.iter()) {
                     let clicked = widget::Button::new().label(&level.name).set(*button_id, ui);
                     if clicked.was_clicked() {
                         let state = GameState::new(level.clone());
-                        result = Some(HUD(state))
+                        *self = InGame(state);
+                        break;
                     }
                 }
-
-                result
             }
-
-            MenuType::Main => {
+            MenuState::MainMenu => {
                 widget::Button::new().label("Level Editor").middle_of(ids.main_canvas).set(ids.editor_button, ui);
                 widget::Text::new("Main Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
-                None
+            }
+            MenuState::InGame(state) => {
+                match state {
+                    GameState::Won { .. } => {
+                        widget::Text::new("Won").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui)
+                    }
+                    GameState::GameState { show_hud, rotation, keys_down, .. } => {
+                        if *show_hud {
+                            widget::Text::new("HUD").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui)
+                        }
+
+                        // Rotate 2 radians per second.
+                        *rotation += 8.0 * args.dt;
+
+                        let mut key_map: BTreeMap<Key, Action> = BTreeMap::new();
+
+                        key_map.insert(Key::W, Action::UP);
+                        key_map.insert(Key::A, Action::LEFT);
+                        key_map.insert(Key::S, Action::DOWN);
+                        key_map.insert(Key::D, Action::RIGHT);
+
+                        let down_clone = keys_down.clone();
+
+                        key_map.iter().filter(|(&k, _)| down_clone.borrow().contains(&k)).for_each(|(_, action)| action.perform(state));
+                    }
+                }
+                state.handle_input();
             }
         }
     }
 
-    fn back(&self) -> Option<GUIVisibility> {
+
+    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) {
         match self {
-            MenuType::Main => None,
-            MenuType::Editor(state) => Some(GUIVisibility::HUD(state.clone())),
-            MenuType::Pause => Some(GUIVisibility::MenuOnly(MenuType::LevelSelect)),
-            MenuType::LevelSelect => Some(GUIVisibility::MenuOnly(MenuType::Main)),
-            MenuType::Custom(menu) => menu.back()
+            MenuState::MainMenu => window.set_should_close(true),
+            MenuState::Editor(LevelEditorState::Empty) => {
+                *self = MenuState::MainMenu;
+            }
+            MenuState::Editor(LevelEditorState::Edit { saved, .. }) => {
+                if *saved {
+                    *self = MenuState::MainMenu
+                } else {
+                    //TODO ask: save/discard/continue editing
+                }
+            }
+            MenuState::Editor(LevelEditorState::Testing { level, saved, file, .. }) => {
+                *self = MenuState::Editor(LevelEditorState::Edit { level: level.clone(), saved: *saved, file: file.as_ref().cloned() });
+            }
+            MenuState::PauseMenu(_state) => {
+                self.open_level_selection()
+            }
+            MenuState::LevelSelect(_) => {
+                *self = MenuState::MainMenu;
+            }
+            InGame(state) => { *self = MenuState::PauseMenu(state.clone()) }
         }
     }
 }
