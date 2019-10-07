@@ -1,8 +1,11 @@
 [workspace]
-members = ["game"
-    ,"derive_macros"
-    ,"derive_macros_helpers"
-    ]
+members =   [ "core"
+            , "base"
+            , "game"
+            , "editor"
+            , "derive_macros"
+            , "derive_macros_helpers"
+            ]
 
 
 

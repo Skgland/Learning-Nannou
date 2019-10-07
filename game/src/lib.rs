@@ -5,31 +5,27 @@ extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate ron;
 
-use piston::window::WindowSettings;
+use piston::window::*;
 use piston::event_loop::*;
 use piston::input::*;
-use opengl_graphics::{GlGraphics, OpenGL};
-//use conrod_core::color::Colorable;
-use piston_window::TextureSettings;
-use piston_window::PistonWindow;
+use opengl_graphics::Texture;
+use conrod_core::Ui;
+
+
 use conrod_core::image::Map;
 
-mod gui;
 mod app;
-mod game;
 
 use app::*;
+
+pub mod game;
+pub mod gui;
+
 use gui::*;
-use conrod_core::Ui;
 use rusttype::gpu_cache::Cache;
-use opengl_graphics::Texture;
-use glutin_window::GlutinWindow;
 
-use crate::game::TileTextureIndex;
+use game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
-
-
-
 
 
 use std::path::PathBuf;
@@ -37,9 +33,11 @@ use graphics::Graphics;
 
 extern crate find_folder;
 
-pub use error::MainError::{self, *};
-
-mod error;
+use piston_window::{PistonWindow, TextureSettings, OpenGL};
+use glutin_window::GlutinWindow;
+use learning_conrod_base::error::MainError;
+use learning_conrod_base::RenderContext;
+use learning_conrod_base::Application;
 
 
 //
@@ -52,37 +50,27 @@ const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
-fn main() -> Result<(), MainError> {
-    let mut window = create_window();
-
-    let ui = create_ui();
-
+pub fn  startup() {
     println!("Writing test level to disc!");
     if let Err(e) = game::level::saving::save_level(get_asset_path().join("levels").join("test.level.ron").as_path(), &game::test_level::test_level()) {
         eprintln!("{}", e);
     }
+}
 
+pub fn  run(window: &mut PistonWindow<GlutinWindow>, context: &mut RenderContext<opengl_graphics::GlGraphics>,event_loop: &mut Events) -> Result<(), MainError> {
 
-    println!("Construction app!");
+    println!("Construction game app!");
     // Create a new game and run it.
-    let mut app = create_app(ui)?;
+    let mut app = create_app()?;
 
-
-    println!("Creating render Context!");
-    let mut context = create_render_context();
-
-
-    println!("Creating event loop iterator");
-    let mut events = Events::new(EventSettings::new());
-
-
-    while let Some(e) = events.next(&mut window) {
-        e.render(|r| app.render(&mut context, r));
+    while let Some(e) = event_loop.next(window) {
+        e.render(|r| app.render(context, r));
+        if let Some(UpdateAction::Close) = e.update(|u| app.update(u, window)){
+            break;
+        }
 
         if let Event::Input(i) = e {
-            app.input(i, &mut window);
-        } else {
-            e.update(|u| app.update(*u, &mut window));
+            app.input(i, event_loop ,window)
         }
     }
 
@@ -121,10 +109,10 @@ fn create_window() -> PistonWindow<GlutinWindow> {
         "spinning-square",
         [INIT_WIDTH, INIT_HEIGHT],
     ).opengl(OPEN_GL_VERSION)
-        .vsync(true)
-        .fullscreen(false)
-        .build()
-        .unwrap()
+     .vsync(true)
+     .fullscreen(false)
+     .build()
+     .unwrap()
 }
 
 fn get_asset_path() -> PathBuf {
@@ -147,7 +135,7 @@ fn create_ui() -> Ui {
 
 type TextureMap<G> = std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
 
-fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>)  {
+fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
     use derive_macros_helpers::Enumerable;
 
     for tile_index in TileTextureIndex::enumerate_all() {
@@ -156,7 +144,7 @@ fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>)  {
     }
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str)  {
+fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) {
     let assets = get_asset_path();
     let path = assets.join("textures").join(format!("{}.png", name));
     let settings = TextureSettings::new();
@@ -167,8 +155,9 @@ fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphic
     }
 }
 
-fn create_app(mut ui: Ui) -> Result<App, String> {
+fn create_app() -> Result<App, String> {
 
+    let mut ui = create_ui();
 
     // Load the rust logo from file to a piston_window texture.
     //let test_texture = load_texture("test.png");
@@ -199,15 +188,4 @@ fn create_app(mut ui: Ui) -> Result<App, String> {
             fullscreen: false,
         }, texture_map, init_menu,
     ))
-}
-
-fn create_render_context<'font>() -> RenderContext<'font, opengl_graphics::GlGraphics> {
-    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
-    let gl = GlGraphics::new(OPEN_GL_VERSION);
-    RenderContext {
-        text_texture_cache,
-        glyph_cache,
-        text_vertex_data,
-        gl,
-    }
 }

@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use rusttype::gpu_cache::Cache;
 use conrod_core::image::Map;
 use conrod_core::Ui;
 
@@ -15,19 +14,18 @@ use piston_window::UpdateArgs;
 use conrod_core::UiCell;
 use piston_window::PistonWindow;
 use glutin_window::GlutinWindow;
-use piston::window::Window;
 use crate::game::GameState;
 use crate::game::LevelTemplate;
 use conrod_core::image::Id;
 use graphics::{Graphics, Context, clear};
 use std::path::PathBuf;
-use conrod_core::input::{RenderArgs, Key};
 use crate::TextureMap;
 use std::rc::Rc;
 use crate::gui::MenuState::InGame;
-use crate::app::Action;
+use crate::app::{Action, UpdateAction};
 use std::collections::BTreeMap;
 use std::borrow::Cow;
+use piston::input::{ButtonState, ButtonArgs, Button, RenderArgs, Key};
 
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
@@ -44,13 +42,6 @@ widget_ids! {
     }
 }
 
-pub struct RenderContext<'font, G: Graphics> {
-    pub gl: G,
-    pub text_texture_cache: opengl_graphics::Texture,
-    pub text_vertex_data: Vec<u8>,
-    pub glyph_cache: Cache<'font>,
-}
-
 pub struct GUI {
     pub image_map: Map<opengl_graphics::Texture>,
     pub image_ids: Vec<Id>,
@@ -65,7 +56,6 @@ pub enum MenuState {
     PauseMenu(GameState),
     InGame(GameState),
     LevelSelect(LevelSelectState),
-    Editor(LevelEditorState),
 }
 
 #[derive(Debug)]
@@ -86,9 +76,9 @@ pub trait Menu: Debug {
 
     fn draw_raw<G: Graphics>(&self, args: &RenderArgs, context: Context, gl: &mut G, texture_map: &TextureMap<G>);
 
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs);
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: &UpdateArgs);
 
-    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>);
+    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) ->  UpdateAction;
 }
 
 impl MenuState {
@@ -106,9 +96,6 @@ impl Menu for MenuState {
             MenuState::MainMenu => Cow::Borrowed("Main Menu"),
             MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
             MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
-            MenuState::Editor(LevelEditorState::Empty) => Cow::Borrowed("Level Editor"),
-            MenuState::Editor(LevelEditorState::Edit { level, .. }) => Cow::Owned(format!("Level Editor: editing {}", level.name)),
-            MenuState::Editor(LevelEditorState::Testing { level, .. }) => Cow::Owned(format!("Level Editor: testing {}", level.name)),
             MenuState::InGame(_) => Cow::Borrowed("")
         }
     }
@@ -116,7 +103,7 @@ impl Menu for MenuState {
     fn handle_input(&self, event: piston::input::Input) {
         use piston::input::*;
         match self {
-            MenuState::Editor(LevelEditorState::Testing { state, .. }) | MenuState::InGame(state) => {
+           MenuState::InGame(state) => {
                 if let GameState::GameState {keys_down,..} = state {
                     if let piston::input::Input::Button(ButtonArgs { button: Button::Keyboard(key), state: button_state, .. }) = event {
                         match button_state {
@@ -143,9 +130,8 @@ impl Menu for MenuState {
         }
     }
 
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs) {
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: &UpdateArgs) {
         match self {
-            MenuState::Editor(_) => {}
             MenuState::PauseMenu(_state) => {
                 widget::Text::new("Pause Menu").font_size(30).mid_top_of(ids.main_canvas).set(ids.menu_title, ui);
                 widget::Button::new().label("Continue")
@@ -205,22 +191,11 @@ impl Menu for MenuState {
     }
 
 
-    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) {
+    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) -> UpdateAction {
         match self {
-            MenuState::MainMenu => window.set_should_close(true),
-            MenuState::Editor(LevelEditorState::Empty) => {
-                *self = MenuState::MainMenu;
-            }
-            MenuState::Editor(LevelEditorState::Edit { saved, .. }) => {
-                if *saved {
-                    *self = MenuState::MainMenu
-                } else {
-                    //TODO ask: save/discard/continue editing
-                }
-            }
-            MenuState::Editor(LevelEditorState::Testing { level, saved, file, .. }) => {
-                *self = MenuState::Editor(LevelEditorState::Edit { level: level.clone(), saved: *saved, file: file.as_ref().cloned() });
-            }
+            MenuState::MainMenu => {
+                return UpdateAction::Close
+            },
             MenuState::PauseMenu(_state) => {
                 self.open_level_selection()
             }
@@ -229,6 +204,8 @@ impl Menu for MenuState {
             }
             InGame(state) => { *self = MenuState::PauseMenu(state.clone()) }
         }
+
+        UpdateAction::Nothing
     }
 }
 

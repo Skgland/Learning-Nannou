@@ -1,0 +1,20 @@
+[package]
+name = "learning_conrod"
+version = "0.1.0"
+authors = ["BB20101997 <bb-github@t-online.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+learning_conrod_editor = {path="../editor"}
+learning_conrod_game = {path="../game"}
+learning_conrod_base = {path="../core"}
+conrod_core = "0.67.0"
+conrod_piston = "0.67.0"
+piston = {version = "0.42.0"}
+piston_window = "0.89.0"
+pistoncore-glutin_window = "0.54.0"
+piston2d-graphics = "0.30.0"
+piston2d-opengl_graphics = "0.60.0"
+find_folder = "0.3.0"

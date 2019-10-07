@@ -16,10 +16,11 @@ use serde::{
 
 pub use level::*;
 use crate::TextureMap;
-use conrod_core::input::{RenderArgs, Key};
+use conrod_core::input::{RenderArgs};
 use std::rc::Rc;
 use std::collections::BTreeSet;
 use std::cell::RefCell;
+use piston::input::Key;
 
 pub mod test_level;
 pub mod level;
