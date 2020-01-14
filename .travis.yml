@@ -12,7 +12,9 @@ matrix:
   - rust: nightly
   - os: windows
   fast_finish: true
-cache: cargo
+cache:
+  cargo: true
+  timeout: 360
 deploy:
   provider: releases
   api_key:
