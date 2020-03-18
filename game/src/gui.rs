@@ -1,14 +1,10 @@
 #![allow(dead_code)]
 
-use conrod_core::image::Map;
-use conrod_core::Ui;
-
 use crate::app::{Action, UpdateAction};
 use crate::game::GameState;
 use crate::game::LevelTemplate;
 use crate::gui::MenuState::InGame;
 use crate::TextureMap;
-use conrod_core::image::Id;
 use conrod_core::position::Positionable;
 use conrod_core::position::Sizeable;
 use conrod_core::widget;
@@ -16,9 +12,8 @@ use conrod_core::widget::Widget;
 use conrod_core::widget_ids;
 use conrod_core::Labelable;
 use conrod_core::UiCell;
-use glutin_window::GlutinWindow;
 use graphics::{clear, Context, Graphics};
-use piston::input::{Button, ButtonArgs, ButtonState, Key, RenderArgs};
+use piston::input::{Key, RenderArgs};
 use piston_window::PistonWindow;
 use piston_window::UpdateArgs;
 use std::borrow::Cow;
@@ -27,6 +22,7 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use learning_conrod_core::get_asset_path;
 use log::trace;
 
 // Generate a unique `WidgetId` for each widget.
@@ -44,17 +40,8 @@ widget_ids! {
     }
 }
 
-pub struct GUI {
-    pub image_map: Map<opengl_graphics::Texture>,
-    pub image_ids: Vec<Id>,
-    pub ui: Ui,
-    pub ids: Ids,
-    pub fullscreen: bool,
-}
-
 #[derive(Debug)]
 pub enum MenuState {
-    MainMenu,
     PauseMenu(GameState),
     InGame(GameState),
     LevelSelect(LevelSelectState),
@@ -92,27 +79,26 @@ pub trait Menu: Debug {
         texture_map: &TextureMap<G>,
     );
 
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: &UpdateArgs);
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs);
 
-    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) -> UpdateAction;
+    fn handle_esc(&mut self, window: &mut PistonWindow) -> UpdateAction;
 }
 
 impl MenuState {
-    pub(crate) fn open_level_selection(&mut self) {
-        let levels = crate::game::level::loading::load_levels(crate::get_asset_path().as_path())
+    pub(crate) fn open_level_selection() -> Self {
+        let levels = crate::game::level::loading::load_levels(get_asset_path().as_path())
             .unwrap_or_else(|_err| Vec::new())
             .into_iter()
             .map(Rc::new)
             .collect();
 
-        *self = MenuState::LevelSelect(LevelSelectState(levels));
+        MenuState::LevelSelect(LevelSelectState(levels))
     }
 }
 
 impl Menu for MenuState {
     fn menu_name(&self) -> Cow<'static, str> {
         match self {
-            MenuState::MainMenu => Cow::Borrowed("Main Menu"),
             MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
             MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
             MenuState::InGame(_) => Cow::Borrowed(""),
@@ -162,7 +148,7 @@ impl Menu for MenuState {
         }
     }
 
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: &UpdateArgs) {
+    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs) {
         match self {
             MenuState::PauseMenu(_state) => {
                 widget::Text::new("Pause Menu")
@@ -193,16 +179,6 @@ impl Menu for MenuState {
                         break;
                     }
                 }
-            }
-            MenuState::MainMenu => {
-                widget::Button::new()
-                    .label("Level Editor")
-                    .middle_of(ids.main_canvas)
-                    .set(ids.editor_button, ui);
-                widget::Text::new("Main Menu")
-                    .font_size(30)
-                    .mid_top_of(ids.main_canvas)
-                    .set(ids.menu_title, ui);
             }
             MenuState::InGame(state) => {
                 match state {
@@ -246,12 +222,11 @@ impl Menu for MenuState {
         }
     }
 
-    fn handle_esc(&mut self, window: &mut PistonWindow<GlutinWindow>) -> UpdateAction {
+    fn handle_esc(&mut self, _window: &mut PistonWindow) -> UpdateAction {
         match self {
-            MenuState::MainMenu => return UpdateAction::Close,
-            MenuState::PauseMenu(_state) => self.open_level_selection(),
+            MenuState::PauseMenu(_state) => *self = Self::open_level_selection(),
             MenuState::LevelSelect(_) => {
-                *self = MenuState::MainMenu;
+                return UpdateAction::Close;
             }
             InGame(state) => *self = MenuState::PauseMenu(state.clone()),
         }
