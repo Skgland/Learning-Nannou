@@ -4,54 +4,62 @@
 
 // Change this to OpenGL::V2_1 if not working.
 
-use std::path::PathBuf;
-use conrod_core::{
-    Ui,
-    image::Map,
-    text::rt::gpu_cache::Cache,
-    widget_ids
-};
-use learning_conrod_base::{GUI, RenderContext, Application};
-use opengl_graphics::{GlGraphics, Texture, OpenGL};
-use piston::window::{WindowSettings, Window};
-use piston::input::{Event, RenderEvent, UpdateEvent, RenderArgs, UpdateArgs, Input, ButtonArgs, Key, Button};
-use piston::event_loop::{Events, EventSettings};
+use conrod_core::{image::Map, text::rt::gpu_cache::Cache, widget_ids, Ui};
 use glutin_window::GlutinWindow;
 use learning_conrod_base::error::MainError;
+use learning_conrod_base::{Application, RenderContext, GUI};
+use opengl_graphics::{GlGraphics, OpenGL, Texture};
+use piston::event_loop::{EventSettings, Events};
+use piston::input::{
+    Button, ButtonArgs, Event, Input, Key, RenderArgs, RenderEvent, UpdateArgs, UpdateEvent,
+};
+use piston::window::{Window, WindowSettings};
 use piston_window::{PistonWindow, TextureSettings};
+use std::path::PathBuf;
+
+use env_logger::Env;
+use log::{info, trace};
 
 const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
 fn main() -> Result<(), MainError> {
+    env_logger::from_env(Env::default().default_filter_or("warn,learning_conrod=trace")).init();
+
     let mut window = create_window();
 
     let ui = create_ui();
 
-    println!("Construction base gui!");
+    trace!("Construction base gui!");
 
     //Create selection menu editor vs. game
     let mut gui = create_gui(ui)?;
 
-
-    println!("Creating render Context!");
+    trace!("Creating render Context!");
     let mut context = create_render_context();
 
-
-    println!("Creating event loop iterator");
+    trace!("Creating event loop iterator");
     let mut event_loop = Events::new(EventSettings::new());
 
+    info!("Press G to start game or ESC to exit!");
     while let Some(e) = event_loop.next(&mut window) {
         e.render(|r| gui.render(&mut context, r));
         e.update(|u| gui.update(u, &mut window));
         if let Event::Input(i) = e {
             gui.input(i.clone(), &mut event_loop, &mut window);
             match &i {
-                Input::Button(ButtonArgs { button: Button::Keyboard(Key::G), .. }) => {
-                    learning_conrod_game::run(&mut window, &mut context,&mut event_loop);
+                //TODO menu to select between game and editor should be presented here!
+                Input::Button(ButtonArgs {
+                    button: Button::Keyboard(Key::G),
+                    ..
+                }) => {
+                    learning_conrod_game::run(&mut window, &mut context, &mut event_loop);
                 }
-                Input::Button(ButtonArgs { button: Button::Keyboard(Key::Escape), .. }) => {
+                Input::Button(ButtonArgs {
+                    button: Button::Keyboard(Key::Escape),
+                    ..
+                }) => {
                     window.window.set_should_close(true);
                 }
                 _ => {}
@@ -82,34 +90,38 @@ fn create_text_cache(_: &()) -> TextCache {
         let buffer_len = INIT_WIDTH as usize * INIT_HEIGHT as usize;
         let init = vec![128; buffer_len];
         let settings = TextureSettings::new();
-        let texture = opengl_graphics::Texture::from_memory_alpha(&init, INIT_WIDTH, INIT_HEIGHT, &settings).unwrap();
+        let texture =
+            opengl_graphics::Texture::from_memory_alpha(&init, INIT_WIDTH, INIT_HEIGHT, &settings)
+                .unwrap();
         (cache, texture)
     };
-    TextCache { text_vertex_data, glyph_cache, text_texture_cache }
+    TextCache {
+        text_vertex_data,
+        glyph_cache,
+        text_texture_cache,
+    }
 }
 
 fn create_window() -> PistonWindow<GlutinWindow> {
     // Create an Glutin window.
-    WindowSettings::new(
-        "Learning Conrod",
-        [INIT_WIDTH, INIT_HEIGHT],
-    ).opengl(OPEN_GL_VERSION)
-     .vsync(true)
-     .fullscreen(false)
-     .build()
-     .unwrap()
+    WindowSettings::new("Learning Conrod", [INIT_WIDTH, INIT_HEIGHT])
+        .opengl(OPEN_GL_VERSION)
+        .vsync(true)
+        .fullscreen(false)
+        .build()
+        .unwrap()
 }
 
 fn get_asset_path() -> PathBuf {
-    find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap()
+    find_folder::Search::KidsThenParents(3, 5)
+        .for_folder("assets")
+        .unwrap()
 }
 
 fn create_ui() -> Ui {
-
     //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)])
-        .build();
-
+    let mut ui =
+        conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)]).build();
 
     // Add a `Font` to the `Ui`'s `font::Map` from file.
     let assets = get_asset_path();
@@ -128,29 +140,39 @@ widget_ids! {
     }
 }
 
-struct BaseGUI{
-    gui: GUI<Ids>
+struct BaseGUI {
+    gui: GUI<Ids>,
 }
 
-impl Application for BaseGUI{
-
+impl Application for BaseGUI {
     type RR = ();
     type IR = ();
     type UR = ();
 
-    fn render(&self, render_context: &mut RenderContext<GlGraphics>, render_args: &RenderArgs) -> Self::RR {
+    fn render(
+        &self,
+        render_context: &mut RenderContext<GlGraphics>,
+        render_args: &RenderArgs,
+    ) -> Self::RR {
     }
 
-    fn input(&mut self, event: Input, event_loop: &mut Events, window: &mut PistonWindow<GlutinWindow>) -> Self::IR {
-
+    fn input(
+        &mut self,
+        event: Input,
+        event_loop: &mut Events,
+        window: &mut PistonWindow<GlutinWindow>,
+    ) -> Self::IR {
     }
 
-    fn update(&mut self, update_args: &UpdateArgs, window: &mut PistonWindow<GlutinWindow>) -> Self::UR {
+    fn update(
+        &mut self,
+        update_args: &UpdateArgs,
+        window: &mut PistonWindow<GlutinWindow>,
+    ) -> Self::UR {
     }
 }
 
 fn create_gui(mut ui: Ui) -> Result<BaseGUI, String> {
-
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
     // In our case we have no image, however the macro may be used to list multiple.
     let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
@@ -159,20 +181,23 @@ fn create_gui(mut ui: Ui) -> Result<BaseGUI, String> {
     let generator = ui.widget_id_generator();
     let ids = Ids::new(generator);
 
-
-    Ok(BaseGUI{
+    Ok(BaseGUI {
         gui: GUI {
             ui,
             ids,
             image_ids: vec![],
             image_map,
             fullscreen: false,
-        }
+        },
     })
 }
 
 fn create_render_context<'font>() -> RenderContext<'font, opengl_graphics::GlGraphics> {
-    let TextCache { text_vertex_data, glyph_cache, text_texture_cache } = create_text_cache(&());
+    let TextCache {
+        text_vertex_data,
+        glyph_cache,
+        text_texture_cache,
+    } = create_text_cache(&());
     let gl = GlGraphics::new(OPEN_GL_VERSION);
     RenderContext {
         text_texture_cache,

@@ -1,16 +1,15 @@
+extern crate glutin_window;
+extern crate graphics;
+extern crate opengl_graphics;
 extern crate piston;
 extern crate piston_window;
-extern crate graphics;
-extern crate glutin_window;
-extern crate opengl_graphics;
 extern crate ron;
 
-use piston::window::*;
+use conrod_core::Ui;
+use opengl_graphics::Texture;
 use piston::event_loop::*;
 use piston::input::*;
-use opengl_graphics::Texture;
-use conrod_core::Ui;
-
+use piston::window::*;
 
 use conrod_core::image::Map;
 
@@ -27,18 +26,18 @@ use rusttype::gpu_cache::Cache;
 use game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
 
-
-use std::path::PathBuf;
 use graphics::Graphics;
+use std::path::PathBuf;
 
 extern crate find_folder;
 
-use piston_window::{PistonWindow, TextureSettings, OpenGL};
 use glutin_window::GlutinWindow;
 use learning_conrod_base::error::MainError;
-use learning_conrod_base::RenderContext;
 use learning_conrod_base::Application;
+use learning_conrod_base::RenderContext;
+use piston_window::{OpenGL, PistonWindow, TextureSettings};
 
+use log::{error, trace};
 
 //
 //Initial Setting
@@ -50,27 +49,32 @@ const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
 const INIT_WIDTH: u32 = 200;
 const INIT_HEIGHT: u32 = 200;
 
-pub fn  startup() {
-    println!("Writing test level to disc!");
-    if let Err(e) = game::level::saving::save_level(get_asset_path().join("levels").join("test.level.ron").as_path(), &game::test_level::test_level()) {
-        eprintln!("{}", e);
+pub fn startup() {
+    let path = get_asset_path().join("levels").join("test.level.ron");
+
+    trace!("Writing test level to disc!");
+    if let Err(e) = game::level::saving::save_level(&path, &game::test_level::test_level()) {
+        error!("{}", e);
     }
 }
 
-pub fn  run(window: &mut PistonWindow<GlutinWindow>, context: &mut RenderContext<opengl_graphics::GlGraphics>,event_loop: &mut Events) -> Result<(), MainError> {
-
-    println!("Construction game app!");
+pub fn run(
+    window: &mut PistonWindow<GlutinWindow>,
+    context: &mut RenderContext<opengl_graphics::GlGraphics>,
+    event_loop: &mut Events,
+) -> Result<(), MainError> {
+    trace!("Construction game app!");
     // Create a new game and run it.
     let mut app = create_app()?;
 
     while let Some(e) = event_loop.next(window) {
         e.render(|r| app.render(context, r));
-        if let Some(UpdateAction::Close) = e.update(|u| app.update(u, window)){
+        if let Some(UpdateAction::Close) = e.update(|u| app.update(u, window)) {
             break;
         }
 
         if let Event::Input(i) = e {
-            app.input(i, event_loop ,window)
+            app.input(i, event_loop, window)
         }
     }
 
@@ -97,34 +101,38 @@ fn create_text_cache(_: &()) -> TextCache {
         let buffer_len = INIT_WIDTH as usize * INIT_HEIGHT as usize;
         let init = vec![128; buffer_len];
         let settings = TextureSettings::new();
-        let texture = opengl_graphics::Texture::from_memory_alpha(&init, INIT_WIDTH, INIT_HEIGHT, &settings).unwrap();
+        let texture =
+            opengl_graphics::Texture::from_memory_alpha(&init, INIT_WIDTH, INIT_HEIGHT, &settings)
+                .unwrap();
         (cache, texture)
     };
-    TextCache { text_vertex_data, glyph_cache, text_texture_cache }
+    TextCache {
+        text_vertex_data,
+        glyph_cache,
+        text_texture_cache,
+    }
 }
 
 fn create_window() -> PistonWindow<GlutinWindow> {
     // Create an Glutin window.
-    WindowSettings::new(
-        "spinning-square",
-        [INIT_WIDTH, INIT_HEIGHT],
-    ).opengl(OPEN_GL_VERSION)
-     .vsync(true)
-     .fullscreen(false)
-     .build()
-     .unwrap()
+    WindowSettings::new("spinning-square", [INIT_WIDTH, INIT_HEIGHT])
+        .opengl(OPEN_GL_VERSION)
+        .vsync(true)
+        .fullscreen(false)
+        .build()
+        .unwrap()
 }
 
 fn get_asset_path() -> PathBuf {
-    find_folder::Search::KidsThenParents(3, 5).for_folder("assets").unwrap()
+    find_folder::Search::KidsThenParents(3, 5)
+        .for_folder("assets")
+        .unwrap()
 }
 
 fn create_ui() -> Ui {
-
     //construct Ui
-    let mut ui = conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)])
-        .build();
-
+    let mut ui =
+        conrod_core::UiBuilder::new([f64::from(INIT_WIDTH), f64::from(INIT_HEIGHT)]).build();
 
     // Add a `Font` to the `Ui`'s `font::Map` from file.
     let assets = get_asset_path();
@@ -133,7 +141,8 @@ fn create_ui() -> Ui {
     ui
 }
 
-type TextureMap<G> = std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
+type TextureMap<G> =
+    std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
 
 fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
     use derive_macros_helpers::Enumerable;
@@ -144,19 +153,25 @@ fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
     }
 }
 
-fn load_texture_into_map(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>, key: TileTextureIndex, name: &str) {
+fn load_texture_into_map(
+    texture_map: &mut TextureMap<opengl_graphics::GlGraphics>,
+    key: TileTextureIndex,
+    name: &str,
+) {
     let assets = get_asset_path();
     let path = assets.join("textures").join(format!("{}.png", name));
     let settings = TextureSettings::new();
     if let Ok(texture) = Texture::from_path(&path, &settings) {
         texture_map.insert(key, texture);
     } else {
-        eprintln!("Failed loading Texture with Index: {:?} , at: {}.png", &key, name);
+        error!(
+            "Failed loading Texture with Index: {:?} , at: {:?}.png",
+            &key, path
+        );
     }
 }
 
 fn create_app() -> Result<App, String> {
-
     let mut ui = create_ui();
 
     // Load the rust logo from file to a piston_window texture.
@@ -186,6 +201,8 @@ fn create_app() -> Result<App, String> {
             image_ids: vec![],
             image_map,
             fullscreen: false,
-        }, texture_map, init_menu,
+        },
+        texture_map,
+        init_menu,
     ))
 }
