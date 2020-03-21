@@ -309,7 +309,6 @@ dependencies = [
 name = "derive_macros"
 version = "0.1.0"
 dependencies = [
- "derive_macros_helpers 0.1.0",
  "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -318,6 +317,9 @@ dependencies = [
 [[package]]
 name = "derive_macros_helpers"
 version = "0.1.0"
+dependencies = [
+ "derive_macros 0.1.0",
+]
 
 [[package]]
 name = "dlib"

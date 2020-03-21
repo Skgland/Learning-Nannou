@@ -1,5 +1,5 @@
 pub use bounded::Bounded;
-pub use enumerable::{Enumerable,EnumerableIterator};
+pub use enumerable::{Enumerable, EnumerableIterator};
 
 mod bounded {
     pub trait Bounded {
@@ -17,61 +17,65 @@ mod bounded {
         }
     }
 
-    macro_rules! impl_nums {
+    macro_rules! impl_nums_bounded {
         ($a:ident) => {
             impl Bounded for $a {
                 fn minimum() -> Self {
-                    std::$a::MIN
+                    $a::MIN
                 }
 
                 fn maximum() -> Self {
-                    std::$a::MAX
+                    $a::MAX
                 }
             }
         };
     }
 
-    impl_nums!(u8);
-    impl_nums!(i8);
-    impl_nums!(u16);
-    impl_nums!(i16);
-    impl_nums!(u32);
-    impl_nums!(i32);
-    impl_nums!(u64);
-    impl_nums!(i64);
-    impl_nums!(u128);
-    impl_nums!(i128);
-
+    impl_nums_bounded!(u8);
+    impl_nums_bounded!(i8);
+    impl_nums_bounded!(u16);
+    impl_nums_bounded!(i16);
+    impl_nums_bounded!(u32);
+    impl_nums_bounded!(i32);
+    impl_nums_bounded!(u64);
+    impl_nums_bounded!(i64);
+    impl_nums_bounded!(u128);
+    impl_nums_bounded!(i128);
 }
 
-mod  enumerable {
+mod enumerable {
     use super::bounded::Bounded;
 
-    pub trait Enumerable where Self: Sized {
+    pub trait Enumerable
+    where
+        Self: Sized,
+    {
         fn next(&self) -> Option<Self>;
 
-        fn first() -> Self where Self: Bounded {
-            Self::minimum()
+        fn enumerate_all() -> EnumerableIterator<Self>
+        where
+            Self: Bounded,
+        {
+            EnumerableIterator {
+                current: Some(Self::minimum()),
+            }
         }
 
-        fn reset(&self) -> Self where Self:Bounded {
-            Self::first()
-        }
-
-        fn enumerate_all() -> EnumerableIterator<Self> where Self: Bounded {
-            EnumerableIterator { current: Some(Self::first()) }
-        }
-
-        fn enumerate_following(&self) -> EnumerableIterator<Self>  {
-            EnumerableIterator{ current:self.next()}
+        fn enumerate_following(&self) -> EnumerableIterator<Self> {
+            EnumerableIterator {
+                current: self.next(),
+            }
         }
     }
 
     pub struct EnumerableIterator<A> {
-        current: Option<A>
+        current: Option<A>,
     }
 
-    impl<A> Iterator for EnumerableIterator<A> where A: Enumerable {
+    impl<A> Iterator for EnumerableIterator<A>
+    where
+        A: Enumerable,
+    {
         type Item = A;
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -90,10 +94,30 @@ mod  enumerable {
         fn next(&self) -> Option<Self> {
             if *self {
                 None
-            }
-            else{
+            } else {
                 Some(true)
             }
         }
     }
 }
+
+macro_rules! impl_nums_enumerable {
+    ($a:ident) => {
+        impl Enumerable for $a {
+            fn next(&self) -> Option<Self> {
+                self.checked_add(1)
+            }
+        }
+    };
+}
+
+impl_nums_enumerable!(u8);
+impl_nums_enumerable!(i8);
+impl_nums_enumerable!(u16);
+impl_nums_enumerable!(i16);
+impl_nums_enumerable!(u32);
+impl_nums_enumerable!(i32);
+impl_nums_enumerable!(u64);
+impl_nums_enumerable!(i64);
+impl_nums_enumerable!(u128);
+impl_nums_enumerable!(i128);

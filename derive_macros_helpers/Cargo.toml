@@ -5,3 +5,4 @@ authors = ["BB20101997 <bennet-blessmann@t-online.de>"]
 edition = "2018"
 
 [dependencies]
+derive_macros = {path = "../derive_macros"}
