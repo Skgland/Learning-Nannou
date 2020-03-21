@@ -21,11 +21,11 @@ mod bounded {
         ($a:ident) => {
             impl Bounded for $a {
                 fn minimum() -> Self {
-                    $a::MIN
+                    std::$a::MIN
                 }
 
                 fn maximum() -> Self {
-                    $a::MAX
+                    std::$a::MAX
                 }
             }
         };
