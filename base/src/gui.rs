@@ -1,6 +1,6 @@
 use super::*;
 use conrod_core::{widget, Borderable, Colorable, Labelable, Positionable, Widget};
-use learning_conrod_core::{cache_queued_glyphs, create_ui};
+use learning_conrod_core::gui::{cache_queued_glyphs, create_ui};
 use piston::window::Window;
 
 pub enum App {

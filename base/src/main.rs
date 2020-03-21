@@ -6,7 +6,7 @@
 
 use conrod_core::{image::Map, text::rt::gpu_cache::Cache, widget_ids};
 use learning_conrod_core::error::MainError;
-use learning_conrod_core::{Application, RenderContext, GUI};
+use learning_conrod_core::gui::{Application, RenderContext, GUI};
 use opengl_graphics::{GlGraphics, OpenGL, Texture};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{

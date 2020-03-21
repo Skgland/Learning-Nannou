@@ -19,7 +19,7 @@ use piston_window::{OpenGL, PistonWindow, TextureSettings};
 use log::{error, trace};
 
 pub use app::{App, UpdateAction};
-use learning_conrod_core::{create_ui, get_asset_path, GUI};
+use learning_conrod_core::{get_asset_path, gui::create_ui, gui::GUI};
 
 //
 //Initial Setting
