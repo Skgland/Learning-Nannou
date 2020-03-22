@@ -13,9 +13,6 @@ jobs:
   - rust: nightly
   - os: windows
   fast_finish: true
-cache:
-  cargo: true
-  timeout: 360
 deploy:
   provider: releases
   token:
