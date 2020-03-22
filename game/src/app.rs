@@ -7,9 +7,7 @@ use conrod_core::{color::Colorable, widget, widget::Widget, Borderable};
 
 use conrod_core::input::Key;
 use learning_conrod_core::gui::{cache_queued_glyphs, Application, RenderContext, GUI};
-use piston::event_loop::Events;
-use piston::input::{Event, Input, RenderArgs, UpdateArgs};
-use piston_window::PistonWindow;
+use piston_window::{Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs};
 
 pub struct App {
     pub(crate) gui: GUI<Ids>,

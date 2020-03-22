@@ -76,7 +76,7 @@ use piston_window::PistonWindow;
 
 pub fn create_ui(window: &PistonWindow) -> Ui {
     use super::get_asset_path;
-    use piston::window::Window;
+    use piston_window::Window;
 
     let size = window.window.draw_size();
 
@@ -99,8 +99,8 @@ pub struct RenderContext<'font, G: Graphics> {
     pub glyph_cache: Cache<'font>,
 }
 
-use piston::event_loop::Events;
-use piston::input::{Input, RenderArgs, UpdateArgs};
+use piston_window::Events;
+use piston_window::{Input, RenderArgs, UpdateArgs};
 
 pub trait Application {
     type RR;

@@ -5,17 +5,12 @@ use crate::game::GameState;
 use crate::game::LevelTemplate;
 use crate::gui::MenuState::InGame;
 use crate::TextureMap;
-use conrod_core::position::Positionable;
-use conrod_core::position::Sizeable;
-use conrod_core::widget;
-use conrod_core::widget::Widget;
-use conrod_core::widget_ids;
-use conrod_core::Labelable;
-use conrod_core::UiCell;
+use conrod_core::{
+    position::Positionable, position::Sizeable, widget, widget::Widget, widget_ids, Labelable,
+    UiCell,
+};
 use graphics::{clear, Context, Graphics};
-use piston::input::{Key, RenderArgs};
-use piston_window::PistonWindow;
-use piston_window::UpdateArgs;
+use piston_window::{Key, PistonWindow, RenderArgs, UpdateArgs};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -69,7 +64,7 @@ pub enum LevelEditorState {
 pub trait Menu: Debug {
     fn menu_name(&self) -> Cow<'static, str>;
 
-    fn handle_input(&self, event: piston::input::Input);
+    fn handle_input(&self, event: piston_window::Input);
 
     fn draw_raw<G: Graphics>(
         &self,
@@ -105,12 +100,12 @@ impl Menu for MenuState {
         }
     }
 
-    fn handle_input(&self, event: piston::input::Input) {
-        use piston::input::*;
+    fn handle_input(&self, event: piston_window::Input) {
+        use piston_window::{Button, ButtonArgs, ButtonState};
         match self {
             MenuState::InGame(state) => {
                 if let GameState::GameState { keys_down, .. } = state {
-                    if let piston::input::Input::Button(ButtonArgs {
+                    if let piston_window::Input::Button(ButtonArgs {
                         button: Button::Keyboard(key),
                         state: button_state,
                         ..

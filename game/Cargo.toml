@@ -10,7 +10,6 @@ edition = "2018"
 derive_macros = {path="../derive_macros"}
 derive_macros_helpers = {path="../derive_macros_helpers"}
 learning_conrod_core = {path="../core"}
-piston = "0.42.0"
 piston2d-graphics = "0.30.0"
 piston2d-opengl_graphics = "0.60.0"
 piston_window = "0.89.0"

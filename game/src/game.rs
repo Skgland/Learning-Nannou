@@ -8,7 +8,7 @@ use std::collections::btree_map::BTreeMap;
 use crate::TextureMap;
 use conrod_core::input::RenderArgs;
 pub use level::*;
-use piston::input::Key;
+use piston_window::Key;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;

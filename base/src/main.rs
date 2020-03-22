@@ -4,20 +4,16 @@
 
 // Change this to OpenGL::V2_1 if not working.
 
-use conrod_core::{image::Map, text::rt::gpu_cache::Cache, widget_ids};
+use conrod_core::text::rt::gpu_cache::Cache;
 use learning_conrod_core::error::MainError;
-use learning_conrod_core::gui::{Application, RenderContext, GUI};
+use learning_conrod_core::gui::{Application, RenderContext};
 use opengl_graphics::{GlGraphics, OpenGL, Texture};
-use piston::event_loop::{EventSettings, Events};
-use piston::input::{
-    Button, ButtonArgs, Event, Input, Key, RenderArgs, RenderEvent, UpdateArgs, UpdateEvent,
+use piston_window::{
+    Event, EventSettings, Events, PistonWindow, RenderEvent, TextureSettings, UpdateEvent,
+    WindowSettings,
 };
-use piston::window::WindowSettings;
-use piston_window::{PistonWindow, TextureSettings};
 
-use crate::App::{Editor, Game, Selection};
 use env_logger::Env;
-use learning_conrod_game::create_app;
 use log::{info, trace};
 
 const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
@@ -94,7 +90,8 @@ fn create_window() -> Result<PistonWindow, MainError> {
         .opengl(OPEN_GL_VERSION)
         .vsync(true)
         .fullscreen(false)
-        .build().map_err(|e| e.into())
+        .build()
+        .map_err(|e| e.into())
 }
 
 fn create_render_context<'font>() -> RenderContext<'font, opengl_graphics::GlGraphics> {

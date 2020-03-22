@@ -12,7 +12,6 @@ learning_conrod_game = {path="../game"}
 learning_conrod_core = {path="../core"}
 conrod_core = "0.69.0"
 conrod_piston = "0.69.0"
-piston = "0.42.0"
 piston_window = "0.89.0"
 piston2d-opengl_graphics = "0.60.0"
 log = "0.4.8"
