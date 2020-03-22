@@ -9,8 +9,7 @@ use conrod_core::{
     position::Positionable, position::Sizeable, widget, widget::Widget, widget_ids, Labelable,
     UiCell,
 };
-use graphics::{clear, Context, Graphics};
-use piston_window::{Key, PistonWindow, RenderArgs, UpdateArgs};
+use piston_window::{clear, Context, Graphics, Key, PistonWindow, RenderArgs, UpdateArgs};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Debug;

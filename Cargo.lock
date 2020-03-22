@@ -625,7 +625,6 @@ dependencies = [
  "derive_macros_helpers 0.1.0",
  "learning_conrod_core 0.1.0",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston2d-graphics 0.30.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-opengl_graphics 0.60.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.89.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ron 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",

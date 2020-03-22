@@ -1,9 +1,16 @@
-use super::*;
+use piston_window::Transformed;
+use piston_window::{rectangle, Context, Graphics};
+
 use crate::TextureMap;
 use derive_macros::*;
 use derive_macros_helpers::*;
 
+use crate::game::{GameState, TILE_SIZE};
 use log::{error, trace};
+use piston_window::image;
+use piston_window::texture::ImageSize;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LevelTemplate {
@@ -244,9 +251,7 @@ impl TileType {
         G::Texture: ImageSize,
     {
         if let GameState::GameState { position, .. } = state {
-            use graphics::*;
-
-            use self::color::*;
+            use super::color::*;
 
             let rect = [0.0, 0.0, TILE_SIZE, TILE_SIZE];
 
@@ -364,7 +369,7 @@ pub struct Connections {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GateVisibility {
     Visible,
-    Hidden(Box<level::TileType>),
+    Hidden(Box<TileType>),
 }
 
 pub mod saving {

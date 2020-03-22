@@ -12,9 +12,7 @@ use gui::*;
 use game::TileTextureIndex;
 use std::collections::btree_map::BTreeMap;
 
-use graphics::Graphics;
-
-use piston_window::{OpenGL, PistonWindow, TextureSettings};
+use piston_window::{Graphics, OpenGL, PistonWindow, TextureSettings};
 
 use log::{error, trace};
 
