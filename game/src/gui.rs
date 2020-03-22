@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
 use crate::app::{Action, UpdateAction};
-use crate::game::GameState;
 use crate::game::LevelTemplate;
+use crate::game::{GameState, TileTextureIndex};
 use crate::gui::MenuState::InGame;
-use crate::TextureMap;
 use conrod_core::{
     position::Positionable, position::Sizeable, widget, widget::Widget, widget_ids, Labelable,
     UiCell,
@@ -17,6 +16,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use learning_conrod_core::get_asset_path;
+use learning_conrod_core::gui::TextureMap;
 use log::trace;
 
 // Generate a unique `WidgetId` for each widget.
@@ -70,7 +70,7 @@ pub trait Menu: Debug {
         args: &RenderArgs,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        texture_map: &TextureMap<G, TileTextureIndex>,
     );
 
     fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs);
@@ -129,7 +129,7 @@ impl Menu for MenuState {
         args: &RenderArgs,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         match self {
             MenuState::InGame(game_state) => {

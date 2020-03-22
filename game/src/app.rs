@@ -1,17 +1,17 @@
-#![allow(dead_code, unused_variables)]
-
 use derive_macros::*;
 
-use crate::{game::GameState, gui::*, TextureMap};
+use crate::{game::GameState, gui::*};
 use conrod_core::{color::Colorable, widget, widget::Widget, Borderable};
 
+use crate::game::TileTextureIndex;
 use conrod_core::input::Key;
-use learning_conrod_core::gui::{cache_queued_glyphs, Application, RenderContext, GUI};
+use learning_conrod_core::gui::{cache_queued_glyphs, Application, RenderContext, TextureMap, GUI};
+use opengl_graphics::GlGraphics;
 use piston_window::{Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs};
 
 pub struct App {
     pub(crate) gui: GUI<Ids>,
-    pub(crate) texture_map: TextureMap<opengl_graphics::GlGraphics>,
+    pub(crate) texture_map: TextureMap<GlGraphics, TileTextureIndex>,
     pub(crate) current_menu: MenuState,
 }
 
@@ -44,14 +44,10 @@ impl Application for App {
     type UR = UpdateAction;
 
     fn render(&self, context: &mut RenderContext<G>, args: &RenderArgs) {
+        #[allow(dead_code)]
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+        #[allow(dead_code)]
         const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
-
-        // Specify how to get the drawable texture from the image. In this case, the image
-        // *is* the texture.
-        fn texture_from_image<T>(img: &T) -> &T {
-            img
-        }
 
         let RenderContext {
             gl,
@@ -67,14 +63,12 @@ impl Application for App {
         gl.draw(args.viewport(), |c, gl| {
             self.current_menu.draw_raw(args, c, gl, &self.texture_map);
 
-            let view = c.store_view();
-
             self.gui
                 .draw(text_texture_cache, glyph_cache, cache_queued_glyphs, c, gl);
         });
     }
 
-    fn input(&mut self, event: Input, event_loop: &mut Events, window: &mut PistonWindow) {
+    fn input(&mut self, event: Input, _event_loop: &mut Events, _window: &mut PistonWindow) {
         if let Some(cr_event) = conrod_piston::event::convert(
             Event::Input(event.clone()),
             self.gui.ui.win_w,
@@ -140,7 +134,11 @@ impl Application for App {
 }
 
 impl App {
-    pub fn new(gui: GUI<Ids>, texture_map: TextureMap<G>, init_menu: MenuState) -> Self {
+    pub fn new(
+        gui: GUI<Ids>,
+        texture_map: TextureMap<G, TileTextureIndex>,
+        init_menu: MenuState,
+    ) -> Self {
         App {
             gui,
             texture_map,
@@ -148,8 +146,22 @@ impl App {
         }
     }
 
+    pub fn gui(&self) -> &GUI<Ids> {
+        &self.gui
+    }
+
+    pub fn set_fullscreen(&mut self, window: &mut PistonWindow, fullscreen: bool) {
+        if fullscreen {
+            let monitor = window.window.window.get_current_monitor();
+            window.window.window.set_fullscreen(Some(monitor));
+            self.gui.fullscreen = true;
+        } else {
+            window.window.window.set_fullscreen(None);
+            self.gui.fullscreen = false;
+        }
+    }
+
     pub fn toggle_fullscreen(window: &mut PistonWindow, current: &mut bool) {
-        //TODO how to do this again
         if *current {
             window.window.window.set_fullscreen(None);
             *current = false;

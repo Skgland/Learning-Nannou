@@ -1,6 +1,3 @@
-#![allow(dead_code, unused_variables)]
-
-use crate::TextureMap;
 use conrod_core::input::RenderArgs;
 pub use level::*;
 use piston_window::{rectangle, Context, Graphics, Key, Transformed};
@@ -8,6 +5,7 @@ use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
+use learning_conrod_core::gui::TextureMap;
 use log::trace;
 
 pub mod color;
@@ -101,7 +99,7 @@ impl GameState {
         args: &RenderArgs,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         if let GameState::GameState { level_state, .. } = self {
             let (x, y) = (args.width / 2.0, args.height / 2.0);
@@ -122,7 +120,7 @@ impl GameState {
         &self,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        _texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         if let GameState::GameState { rotation, .. } = self {
             let transform = context

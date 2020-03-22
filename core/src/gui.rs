@@ -34,8 +34,7 @@ pub fn cache_queued_glyphs<'a>(
     }
 }
 
-use conrod_core::text::rt::gpu_cache::Cache;
-use conrod_piston::draw::Context;
+use piston_window::{Context, TextureSettings};
 
 impl<Ids> GUI<Ids> {
     pub fn draw(
@@ -99,8 +98,12 @@ pub struct RenderContext<'font, G: Graphics> {
     pub glyph_cache: Cache<'font>,
 }
 
+use conrod_core::text::rt::gpu_cache::Cache;
+use derive_macros_helpers::{Bounded, Enumerable};
+use log::error;
 use piston_window::Events;
 use piston_window::{Input, RenderArgs, UpdateArgs};
+use std::fmt::Debug;
 
 pub trait Application {
     type RR;
@@ -119,4 +122,36 @@ pub trait Application {
         window: &mut PistonWindow,
     ) -> Self::IR;
     fn update(&mut self, update_args: UpdateArgs, window: &mut PistonWindow) -> Self::UR;
+}
+
+pub type TextureMap<G, K> = std::collections::btree_map::BTreeMap<K, <G as Graphics>::Texture>;
+
+pub fn load_textures<K: Ord + Debug + Enumerable + Bounded + ToString>() -> TextureMap<GlGraphics, K>
+{
+    let mut texture_map = <TextureMap<GlGraphics, _>>::new();
+
+    for tile_index in K::enumerate_all() {
+        let file_name = tile_index.to_string();
+        load_texture_into_map(&mut texture_map, tile_index, &file_name);
+    }
+
+    texture_map
+}
+
+fn load_texture_into_map<K: Ord + Debug>(
+    texture_map: &mut TextureMap<GlGraphics, K>,
+    key: K,
+    name: &str,
+) {
+    let assets = super::get_asset_path();
+    let path = assets.join("textures").join(format!("{}.png", name));
+    let settings = TextureSettings::new();
+    if let Ok(texture) = Texture::from_path(&path, &settings) {
+        texture_map.insert(key, texture);
+    } else {
+        error!(
+            "Failed loading Texture with Index: {:?} , at: {:?}",
+            &key, path
+        );
+    }
 }

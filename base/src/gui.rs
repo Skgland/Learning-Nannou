@@ -2,6 +2,7 @@ use conrod_core::{widget, Borderable, Colorable, Labelable, Positionable, Widget
 use learning_conrod_core::gui::{cache_queued_glyphs, create_ui, Application, RenderContext, GUI};
 //use piston::window::Window;
 use crate::gui::App::{Editor, Game, Selection};
+use crate::gui::AppResult::{KeepCurrent, SwitchToSelection};
 use conrod_core::image::Map;
 use conrod_core::input::Button;
 use conrod_core::input::Key;
@@ -9,8 +10,10 @@ use conrod_core::widget_ids;
 use learning_conrod_game::create_app;
 use opengl_graphics::GlGraphics;
 use piston_window::{
-    ButtonArgs, Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs, Window,
+    ButtonArgs, ButtonState, Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs, Window,
 };
+
+use log::info;
 
 pub enum App {
     Game(learning_conrod_game::App),
@@ -20,16 +23,26 @@ pub enum App {
 
 impl App {
     fn perform_action(&mut self, action: AppResult, window: &mut PistonWindow) {
+        let fullscreen = match self {
+            Game(app) => app.gui().fullscreen,
+            Editor(_) => unimplemented!(),
+            Selection(SelectionGUI { gui, .. }) => gui.fullscreen,
+        };
+
         match action {
             AppResult::KeepCurrent => {}
             AppResult::SwitchToGame => {
                 //TODO handle create_app Err better
-                *self = Game(create_app(window).expect("TODO handle this better"))
+                let mut app = create_app(window).expect("TODO handle this better");
+                app.set_fullscreen(window, fullscreen);
+                *self = Game(app)
             }
             AppResult::SwitchToEditor => *self = Editor(unimplemented!()),
             AppResult::SwitchToSelection => {
                 //TODO handle create_gui Err better
-                *self = Selection(create_gui(window).expect("TODO handle this better"))
+                let mut app = create_gui(window).expect("TODO handle this better");
+                app.gui.fullscreen = fullscreen;
+                *self = Selection(app)
             }
             AppResult::Exit => {
                 window.set_should_close(true);
@@ -78,22 +91,15 @@ impl Application for App {
     }
 
     fn update(&mut self, update_args: UpdateArgs, window: &mut PistonWindow) -> Self::UR {
-        match self {
-            Self::Game(app) => {
-                match app.update(update_args, window) {
-                    learning_conrod_game::UpdateAction::Nothing => {}
-                    //TODO handle create_app Err better
-                    learning_conrod_game::UpdateAction::Close => {
-                        *self = Selection(create_gui(window).unwrap())
-                    }
-                }
-            }
+        let action = match self {
+            Self::Game(app) => match app.update(update_args, window) {
+                learning_conrod_game::UpdateAction::Nothing => KeepCurrent,
+                learning_conrod_game::UpdateAction::Close => SwitchToSelection,
+            },
             Self::Editor(_app) => unimplemented!(),
-            Self::Selection(app) => {
-                let result = app.update(update_args, window);
-                self.perform_action(result, window);
-            }
-        }
+            Self::Selection(app) => app.update(update_args, window),
+        };
+        self.perform_action(action, window);
     }
 }
 
@@ -190,11 +196,19 @@ impl Application for SelectionGUI {
             }) => Self::IR::SwitchToGame,
             Input::Button(ButtonArgs {
                 button: Button::Keyboard(Key::F11),
+                state: ButtonState::Release,
                 ..
             }) => {
-                let monitor = window.window.window.get_current_monitor();
-
-                window.window.window.set_fullscreen(Some(monitor));
+                if self.gui.fullscreen {
+                    info!("F11 pressed: Turning off fullscreen!");
+                    window.window.window.set_fullscreen(None);
+                    self.gui.fullscreen = false;
+                } else {
+                    info!("F11 pressed: Turning on fullscreen!");
+                    let monitor = window.window.window.get_current_monitor();
+                    window.window.window.set_fullscreen(Some(monitor));
+                    self.gui.fullscreen = true;
+                }
 
                 Self::IR::KeepCurrent
             }

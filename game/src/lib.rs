@@ -1,5 +1,3 @@
-use opengl_graphics::Texture;
-
 use conrod_core::image::Map;
 
 mod app;
@@ -10,9 +8,8 @@ pub mod gui;
 use gui::*;
 
 use game::TileTextureIndex;
-use std::collections::btree_map::BTreeMap;
 
-use piston_window::{Graphics, OpenGL, PistonWindow, TextureSettings};
+use piston_window::{OpenGL, PistonWindow};
 
 use log::{error, trace};
 
@@ -37,35 +34,7 @@ fn startup() {
     }
 }
 
-type TextureMap<G> =
-    std::collections::btree_map::BTreeMap<TileTextureIndex, <G as Graphics>::Texture>;
-
-fn load_textures(texture_map: &mut TextureMap<opengl_graphics::GlGraphics>) {
-    use derive_macros_helpers::Enumerable;
-
-    for tile_index in TileTextureIndex::enumerate_all() {
-        let file_name = tile_index.file_name();
-        load_texture_into_map(texture_map, tile_index, &file_name);
-    }
-}
-
-fn load_texture_into_map(
-    texture_map: &mut TextureMap<opengl_graphics::GlGraphics>,
-    key: TileTextureIndex,
-    name: &str,
-) {
-    let assets = get_asset_path();
-    let path = assets.join("textures").join(format!("{}.png", name));
-    let settings = TextureSettings::new();
-    if let Ok(texture) = Texture::from_path(&path, &settings) {
-        texture_map.insert(key, texture);
-    } else {
-        error!(
-            "Failed loading Texture with Index: {:?} , at: {:?}",
-            &key, path
-        );
-    }
-}
+use learning_conrod_core::gui::load_textures;
 
 pub fn create_app(window: &PistonWindow) -> Result<App, String> {
     startup();
@@ -80,9 +49,7 @@ pub fn create_app(window: &PistonWindow) -> Result<App, String> {
     let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
     //let test_texture = image_map.insert(test_texture);
 
-    let mut texture_map = BTreeMap::new();
-
-    load_textures(&mut texture_map);
+    let texture_map = load_textures::<TileTextureIndex>();
 
     // Instantiate the generated list of widget identifiers.
     let generator = ui.widget_id_generator();
