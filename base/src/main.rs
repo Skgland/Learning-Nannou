@@ -31,7 +31,7 @@ use gui::{create_gui, App};
 fn main() -> Result<(), MainError> {
     env_logger::from_env(Env::default().default_filter_or("warn,learning_conrod=trace")).init();
 
-    let mut window = create_window();
+    let mut window = create_window()?;
 
     trace!("Creating render Context!");
     let mut context = create_render_context();
@@ -88,14 +88,13 @@ fn create_text_cache(_: &()) -> TextCache {
     }
 }
 
-fn create_window() -> PistonWindow {
+fn create_window() -> Result<PistonWindow, MainError> {
     // Create an Glutin window.
     WindowSettings::new("Learning Conrod", [INIT_WIDTH, INIT_HEIGHT])
         .opengl(OPEN_GL_VERSION)
         .vsync(true)
         .fullscreen(false)
-        .build()
-        .unwrap()
+        .build().map_err(|e| e.into())
 }
 
 fn create_render_context<'font>() -> RenderContext<'font, opengl_graphics::GlGraphics> {
