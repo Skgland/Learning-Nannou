@@ -1,11 +1,20 @@
 use std::fmt::{Display, Formatter};
+use std::error::Error;
+use crate::error::MainError::Dyn;
 
 #[derive(Debug)]
 pub enum MainError {
     SerializeError(ron::ser::Error),
     DeserializeError(ron::de::Error),
     IOError(std::io::Error),
+    Dyn(Box<dyn Error>),
     Custom(String),
+}
+
+impl From<Box<dyn Error>> for MainError {
+    fn from(e: Box<dyn Error>) -> Self {
+        Dyn(e)
+    }
 }
 
 impl From<ron::ser::Error> for MainError {
@@ -38,6 +47,7 @@ impl Display for MainError {
             MainError::DeserializeError(e) => Display::fmt(e, f),
             MainError::SerializeError(e) => Display::fmt(e, f),
             MainError::IOError(e) => Display::fmt(e, f),
+            MainError::Dyn(e) => Display::fmt(e,f),
             MainError::Custom(e) => Display::fmt(e, f),
         }
     }

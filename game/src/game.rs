@@ -1,31 +1,23 @@
 #![allow(dead_code, unused_variables)]
 
-
-use std::collections::btree_map::BTreeMap;
-use graphics::{
-    Context,
-    Graphics,
-    ImageSize,
-    rectangle,
-};
+use graphics::{rectangle, Context, Graphics, ImageSize};
 use piston_window::Transformed;
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
+use std::collections::btree_map::BTreeMap;
 
-pub use level::*;
 use crate::TextureMap;
-use conrod_core::input::{RenderArgs};
-use std::rc::Rc;
-use std::collections::BTreeSet;
-use std::cell::RefCell;
+use conrod_core::input::RenderArgs;
+pub use level::*;
 use piston::input::Key;
+use std::cell::RefCell;
+use std::collections::BTreeSet;
+use std::rc::Rc;
 
-pub mod test_level;
-pub mod level;
+use log::trace;
+
 pub mod color;
-
+pub mod level;
+pub mod test_level;
 
 #[derive(Clone, Debug)]
 pub struct PlayerCoordinate {
@@ -42,7 +34,7 @@ pub enum GameState {
         //current angle of the rotating square
         rotation: f64,
 
-        show_hud:bool,
+        show_hud: bool,
 
         keys_down: Rc<RefCell<BTreeSet<Key>>>,
 
@@ -58,7 +50,10 @@ pub enum GameState {
 
 impl From<&PlayerCoordinate> for ObjectCoordinate {
     fn from(player: &PlayerCoordinate) -> Self {
-        ObjectCoordinate { x: player.x.round() as i64, y: player.y.round() as i64 }
+        ObjectCoordinate {
+            x: player.x.round() as i64,
+            y: player.y.round() as i64,
+        }
     }
 }
 
@@ -84,48 +79,67 @@ impl GameState {
     }
 
     pub fn handle_input(&mut self) {
-        if let GameState::GameState { position, old_position, level_state, .. } = self {
+        if let GameState::GameState {
+            position,
+            old_position,
+            level_state,
+            ..
+        } = self
+        {
             let new_pos: ObjectCoordinate = position.into();
             if *old_position != new_pos {
                 *old_position = new_pos;
-                println!("Stepping on {:?} with {:?}", old_position, position);
-                if let Some(fun) = level_state.tile_map.get_mut(old_position).and_then(TileType::step_on) {
+                trace! {"Stepping on {:?} with {:?}", old_position, position}
+                if let Some(fun) = level_state
+                    .tile_map
+                    .get_mut(old_position)
+                    .and_then(TileType::step_on)
+                {
                     fun(self);
                 }
             }
         }
     }
 
-    pub fn draw_game<G:Graphics>(&self,args: &RenderArgs, context:Context, gl:&mut G, texture_map: &TextureMap<G>){
+    pub fn draw_game<G: Graphics>(
+        &self,
+        args: &RenderArgs,
+        context: Context,
+        gl: &mut G,
+        texture_map: &TextureMap<G>,
+    ) {
+        if let GameState::GameState { level_state, .. } = self {
+            let (x, y) = (args.width / 2.0, args.height / 2.0);
 
-            if let GameState::GameState { level_state, .. } = self {
-                let (x, y) = (args.width / 2.0,
-                              args.height / 2.0);
+            let c = context.trans(x, y);
 
-                let c = context.trans(x, y);
-
-
-                for (coord, tile) in &level_state.tile_map {
-                    tile.draw_tile(c, gl, texture_map, coord, self);
-                }
-
-                // Draw a box rotating around the middle of the screen.
-
-                self.draw_player(c, gl, texture_map);
+            for (coord, tile) in &level_state.tile_map {
+                tile.draw_tile(c, gl, texture_map, coord, self);
             }
 
+            // Draw a box rotating around the middle of the screen.
+
+            self.draw_player(c, gl, texture_map);
+        }
 
         use ::graphics::*;
     }
 
-    pub fn draw_player<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>) {
+    pub fn draw_player<G: Graphics>(
+        &self,
+        context: Context,
+        gl: &mut G,
+        texture_map: &TextureMap<G>,
+    ) {
         if let GameState::GameState { rotation, .. } = self {
-            let transform = context.rot_rad(*rotation).trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0).transform;
+            let transform = context
+                .rot_rad(*rotation)
+                .trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0)
+                .transform;
             rectangle(PLAYER_COLOR, PLAYER_SQUARE, transform, gl);
         }
     }
 }
-
 
 pub const TILE_SIZE: f64 = 64.0;
 pub const PLAYER_SIZE: f64 = 45.0;

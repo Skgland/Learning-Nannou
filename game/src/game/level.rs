@@ -3,6 +3,7 @@ use crate::TextureMap;
 use derive_macros::*;
 use derive_macros_helpers::*;
 
+use log::{error, trace};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LevelTemplate {
@@ -10,13 +11,14 @@ pub struct LevelTemplate {
     pub init_state: LevelState,
 }
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LevelState {
-    pub tile_map: BTreeMap<ObjectCoordinate, TileType>
+    pub tile_map: BTreeMap<ObjectCoordinate, TileType>,
 }
 
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, Serialize, Deserialize, Bounded, Enumerable)]
+#[derive(
+    Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Debug, Serialize, Deserialize, Bounded, Enumerable,
+)]
 pub enum Direction {
     UP,
     DOWN,
@@ -51,7 +53,9 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable)]
+#[derive(
+    Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable,
+)]
 pub enum NorthSouthAxis {
     North,
     South,
@@ -66,7 +70,9 @@ impl NorthSouthAxis {
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable)]
+#[derive(
+    Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable,
+)]
 pub enum EastWestAxis {
     East,
     West,
@@ -76,12 +82,14 @@ impl EastWestAxis {
     pub fn file_modifier(self) -> &'static str {
         match self {
             EastWestAxis::East => "right",
-            EastWestAxis::West => "left"
+            EastWestAxis::West => "left",
         }
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable)]
+#[derive(
+    Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable,
+)]
 pub enum Orientation {
     Horizontal,
     Vertical,
@@ -96,13 +104,24 @@ impl Orientation {
     }
 }
 
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable)]
+#[derive(
+    Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Bounded, Enumerable,
+)]
 pub enum WallType {
-    Single { facing: Direction },
-    Double { orientation: Orientation },
-    Corner { north_south_facing: NorthSouthAxis, east_west_facing: EastWestAxis },
+    Single {
+        facing: Direction,
+    },
+    Double {
+        orientation: Orientation,
+    },
+    Corner {
+        north_south_facing: NorthSouthAxis,
+        east_west_facing: EastWestAxis,
+    },
     //primary and secondary facing should be different
-    End { facing: Direction },
+    End {
+        facing: Direction,
+    },
     Lone,
     Center,
 }
@@ -114,12 +133,19 @@ impl WallType {
             WallType::Center => "center".to_string(),
             WallType::Single { facing } => format!("single_{}", facing.file_modifier()),
             WallType::Double { orientation } => format!("double_{}", orientation.file_modifier()),
-            WallType::Corner { north_south_facing, east_west_facing } => { format!("{}{}_{}", if false { "inner_" } else { "" }, north_south_facing.file_modifier(), east_west_facing.file_modifier()) }
-            WallType::End { facing } => { format!("end_{}", facing.file_modifier()) }
+            WallType::Corner {
+                north_south_facing,
+                east_west_facing,
+            } => format!(
+                "{}{}_{}",
+                if false { "inner_" } else { "" },
+                north_south_facing.file_modifier(),
+                east_west_facing.file_modifier()
+            ),
+            WallType::End { facing } => format!("end_{}", facing.file_modifier()),
         }
     }
 }
-
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Bounded, Enumerable)]
 pub enum TileTextureIndex {
@@ -135,39 +161,63 @@ pub enum TileTextureIndex {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TileType {
-    Wall { kind: WallType },
+    Wall {
+        kind: WallType,
+    },
     Path,
     Ladder,
     Start,
-    Goal { active: bool },
-    Gate { open: bool, facing: Direction, hidden: GateVisibility },
-    OneWay { inverted: bool, facing: Direction },
-    Button { pressed: bool, inverted: bool, target: ObjectCoordinate },
+    Goal {
+        active: bool,
+    },
+    Gate {
+        open: bool,
+        facing: Direction,
+        hidden: GateVisibility,
+    },
+    OneWay {
+        inverted: bool,
+        facing: Direction,
+    },
+    Button {
+        pressed: bool,
+        inverted: bool,
+        target: ObjectCoordinate,
+    },
 }
-
 
 impl TileType {
     pub fn apply_button(&mut self, active: bool) {
         match self {
-            TileType::Goal { active: active_goal } => *active_goal = active,
+            TileType::Goal {
+                active: active_goal,
+            } => *active_goal = active,
             TileType::Gate { open, .. } => *open = active,
             TileType::OneWay { inverted, .. } => *inverted = active,
-            _ => eprintln!("Tried to change the state of a single State Tile or Button Tile with a Button!"),
+            _ => error!(
+                "Tried to change the state of a single State Tile or Button Tile with a Button!"
+            ),
         }
     }
 
     pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState) -> ()>> {
         match self {
             TileType::Goal { active: true } => {
-                println!("Goal reached!");
-                Some(Box::new(|game|
+                trace!("Goal reached!");
+                Some(Box::new(|game| {
                     if let GameState::GameState { level_template, .. } = game {
-                        *game = GameState::Won { level_template: level_template.clone() }
+                        *game = GameState::Won {
+                            level_template: level_template.clone(),
+                        }
                     }
-                ))
+                }))
             }
-            TileType::Button { pressed, inverted, target } => {
-                println!("Stepping on a Button");
+            TileType::Button {
+                pressed,
+                inverted,
+                target,
+            } => {
+                trace!("Stepping on a Button");
                 *pressed = !*pressed;
                 let power = *pressed ^ *inverted;
                 let t = *target;
@@ -179,11 +229,20 @@ impl TileType {
                     }
                 }))
             }
-            _ => { None }
+            _ => None,
         }
     }
 
-    pub fn draw_tile<G: Graphics>(&self, context: Context, gl: &mut G, texture_map: &TextureMap<G>, coord: &ObjectCoordinate, state: &GameState) where G::Texture: ImageSize {
+    pub fn draw_tile<G: Graphics>(
+        &self,
+        context: Context,
+        gl: &mut G,
+        texture_map: &TextureMap<G>,
+        coord: &ObjectCoordinate,
+        state: &GameState,
+    ) where
+        G::Texture: ImageSize,
+    {
         if let GameState::GameState { position, .. } = state {
             use graphics::*;
 
@@ -191,11 +250,18 @@ impl TileType {
 
             let rect = [0.0, 0.0, TILE_SIZE, TILE_SIZE];
 
-            let adjusted = context.trans((coord.x as f64) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0,
-                                         (coord.y as f64) * TILE_SIZE - position.y * 64.0 - TILE_SIZE / 2.0);
+            let adjusted = context.trans(
+                (coord.x as f64) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0,
+                (coord.y as f64) * TILE_SIZE - position.y * 64.0 - TILE_SIZE / 2.0,
+            );
 
             if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
-                let transform = adjusted.scale(TILE_SIZE / f64::from(texture.get_width()), TILE_SIZE / f64::from(texture.get_height())).transform;
+                let transform = adjusted
+                    .scale(
+                        TILE_SIZE / f64::from(texture.get_width()),
+                        TILE_SIZE / f64::from(texture.get_height()),
+                    )
+                    .transform;
                 image(texture, transform, gl)
             } else {
                 rectangle(D_RED, rect, adjusted.transform, gl)
@@ -224,12 +290,35 @@ impl TileType {
             TileType::Ladder => TileTextureIndex::Ladder,
             TileType::Goal { active } => TileTextureIndex::Goal { active: *active },
             TileType::Button { pressed, .. } => TileTextureIndex::Button { pressed: *pressed },
-            TileType::OneWay { facing, inverted: false } => TileTextureIndex::OneWay { facing: *facing },
-            TileType::OneWay { facing, inverted: true } => TileTextureIndex::OneWay { facing: facing.inverted() },
+            TileType::OneWay {
+                facing,
+                inverted: false,
+            } => TileTextureIndex::OneWay { facing: *facing },
+            TileType::OneWay {
+                facing,
+                inverted: true,
+            } => TileTextureIndex::OneWay {
+                facing: facing.inverted(),
+            },
             TileType::Wall { kind } => TileTextureIndex::Wall { kind: *kind },
-            TileType::Gate { open, facing, hidden: GateVisibility::Visible } |
-            TileType::Gate { open: open @ true, facing, .. } => TileTextureIndex::Gate { open: *open, facing: *facing },
-            TileType::Gate { open: false, facing, hidden: GateVisibility::Hidden(mimic) } => mimic.tile_texture_id(),
+            TileType::Gate {
+                open,
+                facing,
+                hidden: GateVisibility::Visible,
+            }
+            | TileType::Gate {
+                open: open @ true,
+                facing,
+                ..
+            } => TileTextureIndex::Gate {
+                open: *open,
+                facing: *facing,
+            },
+            TileType::Gate {
+                open: false,
+                facing,
+                hidden: GateVisibility::Hidden(mimic),
+            } => mimic.tile_texture_id(),
         }
     }
 }
@@ -239,13 +328,21 @@ impl TileTextureIndex {
         match self {
             TileTextureIndex::Path => "path".to_string(),
             TileTextureIndex::Start => "start".to_string(),
-            TileTextureIndex::Goal { active } => format!("goal{}", if !active { "_inactive" } else { "" }),
+            TileTextureIndex::Goal { active } => {
+                format!("goal{}", if !active { "_inactive" } else { "" })
+            }
             // we should never need a texture for a hidden and closed gate because it is hidden
-            TileTextureIndex::Gate { open, facing } => format!("{}_gate_{}", if *open { "open" } else { "closed" }, facing.file_modifier()),
+            TileTextureIndex::Gate { open, facing } => format!(
+                "{}_gate_{}",
+                if *open { "open" } else { "closed" },
+                facing.file_modifier()
+            ),
             TileTextureIndex::Ladder => "ladder".to_string(),
             TileTextureIndex::OneWay { facing } => format!("one_way{}", facing.file_modifier()),
-            TileTextureIndex::Wall { kind } => { format!("wall_{}", kind.file_modifier()) }
-            TileTextureIndex::Button { pressed } => { format!("button{}", if *pressed { "_pressed" } else { "" }) }
+            TileTextureIndex::Wall { kind } => format!("wall_{}", kind.file_modifier()),
+            TileTextureIndex::Button { pressed } => {
+                format!("button{}", if *pressed { "_pressed" } else { "" })
+            }
         }
     }
 }
@@ -257,8 +354,12 @@ pub struct ObjectCoordinate {
 }
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Connections { pub up: bool, pub down: bool, pub left: bool, pub right: bool }
-
+pub struct Connections {
+    pub up: bool,
+    pub down: bool,
+    pub left: bool,
+    pub right: bool,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GateVisibility {
@@ -269,9 +370,11 @@ pub enum GateVisibility {
 pub mod saving {
     use crate::game::LevelTemplate;
     use serde::ser::Serialize;
+    use std::fmt::{Display, Formatter};
     use std::fs::File;
     use std::io::Write;
-    use std::fmt::{Display, Formatter};
+
+    use log::info;
 
     pub enum SavingError {
         IO(std::io::Error),
@@ -281,8 +384,8 @@ pub mod saving {
     impl Display for SavingError {
         fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
             match self {
-                SavingError::IO(err) => Display::fmt(err,f),
-                SavingError::Serialize(err) => Display::fmt(err,f),
+                SavingError::IO(err) => Display::fmt(err, f),
+                SavingError::Serialize(err) => Display::fmt(err, f),
             }
         }
     }
@@ -299,7 +402,10 @@ pub mod saving {
         }
     }
 
-    pub(crate) fn save_level(path: &std::path::Path, level: &LevelTemplate) -> Result<(), SavingError> {
+    pub(crate) fn save_level(
+        path: &std::path::Path,
+        level: &LevelTemplate,
+    ) -> Result<(), SavingError> {
         let pretty = ron::ser::PrettyConfig {
             depth_limit: !0,
             new_line: "\n".to_string(),
@@ -322,6 +428,9 @@ pub mod saving {
         }
 
         let mut file = File::create(path)?;
+
+        info!("Writing level {} to {:?}.", level.name, path);
+
         file.write_all(out.as_bytes())?;
         Ok(())
     }
@@ -343,14 +452,15 @@ pub mod loading {
         }
     }
 
-
     impl From<ron::de::Error> for LoadingError {
         fn from(de_err: ron::de::Error) -> Self {
             LoadingError::Deserialize(de_err)
         }
     }
 
-    pub(crate) fn load_levels(asset_path: &std::path::Path) -> Result<Vec<LevelTemplate>, LoadingError> {
+    pub(crate) fn load_levels(
+        asset_path: &std::path::Path,
+    ) -> Result<Vec<LevelTemplate>, LoadingError> {
         let path = asset_path.join("levels");
         let mut levels = vec![];
 
@@ -374,7 +484,6 @@ pub mod loading {
         }
         Ok(levels)
     }
-
 
     fn load_level(path: &std::path::Path) -> Result<LevelTemplate, LoadingError> {
         let mut content = vec![];
