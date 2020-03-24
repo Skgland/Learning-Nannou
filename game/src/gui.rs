@@ -1,27 +1,31 @@
-#![allow(dead_code)]
-
-use crate::app::{Action, UpdateAction};
-use crate::game::LevelTemplate;
-use crate::game::{GameState, TileTextureIndex};
-use crate::gui::MenuState::InGame;
+use crate::{
+    app::{Action, UpdateAction},
+    game::GameState,
+    game::LevelTemplate,
+    gui::MenuState::InGame,
+};
 use conrod_core::{
     position::Positionable, position::Sizeable, widget, widget::Widget, widget_ids, Labelable,
     UiCell,
 };
-use piston_window::{clear, Context, Graphics, Key, PistonWindow, RenderArgs, UpdateArgs};
+use piston_window::{clear, Context, Events, Input, Key, PistonWindow, RenderArgs, UpdateArgs};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::path::PathBuf;
 use std::rc::Rc;
 
-use learning_conrod_core::get_asset_path;
+use crate::game::TileTextureIndex;
 use learning_conrod_core::gui::TextureMap;
+use learning_conrod_core::{
+    get_asset_path,
+    gui::{Application, RenderContext, GUI},
+};
 use log::trace;
+use opengl_graphics::{GlGraphics, Texture};
 
 // Generate a unique `WidgetId` for each widget.
 widget_ids! {
-    pub struct Ids {
+    pub struct GameIds {
         main_canvas,
         menu_title,
         level_buttons[],
@@ -44,36 +48,10 @@ pub enum MenuState {
 #[derive(Debug)]
 pub struct LevelSelectState(Vec<Rc<LevelTemplate>>);
 
-#[derive(Debug)]
-pub enum LevelEditorState {
-    Empty,
-    Edit {
-        level: LevelTemplate,
-        saved: bool,
-        file: Option<PathBuf>,
-    },
-    Testing {
-        level: LevelTemplate,
-        saved: bool,
-        file: Option<PathBuf>,
-        state: GameState,
-    },
-}
-
 pub trait Menu: Debug {
     fn menu_name(&self) -> Cow<'static, str>;
 
     fn handle_input(&self, event: piston_window::Input);
-
-    fn draw_raw<G: Graphics>(
-        &self,
-        args: &RenderArgs,
-        context: Context,
-        gl: &mut G,
-        texture_map: &TextureMap<G, TileTextureIndex>,
-    );
-
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs);
 
     fn handle_esc(&mut self, window: &mut PistonWindow) -> UpdateAction;
 }
@@ -90,51 +68,27 @@ impl MenuState {
     }
 }
 
-impl Menu for MenuState {
-    fn menu_name(&self) -> Cow<'static, str> {
-        match self {
-            MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
-            MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
-            MenuState::InGame(_) => Cow::Borrowed(""),
-        }
-    }
+impl<'a> Application<'a> for MenuState {
+    type RR = ();
+    type IR = ();
+    type UR = ();
+    type GUI = ();
+    type RP = TextureMap<GlGraphics, TileTextureIndex>;
+    type UP = (UiCell<'a>, &'a mut GameIds);
 
-    fn handle_input(&self, event: piston_window::Input) {
-        use piston_window::{Button, ButtonArgs, ButtonState};
-        match self {
-            MenuState::InGame(state) => {
-                if let GameState::GameState { keys_down, .. } = state {
-                    if let piston_window::Input::Button(ButtonArgs {
-                        button: Button::Keyboard(key),
-                        state: button_state,
-                        ..
-                    }) = event
-                    {
-                        match button_state {
-                            ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
-                            ButtonState::Release => {
-                                keys_down.try_borrow_mut().unwrap().remove(&key)
-                            }
-                        };
-                        trace!("{:?}", key);
-                    };
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn draw_raw<G: Graphics>(
+    fn render<'font>(
         &self,
-        args: &RenderArgs,
+        _gui: &Self::GUI,
+        texture_map: &Self::RP,
+        gl: &mut GlGraphics,
         context: Context,
-        gl: &mut G,
-        texture_map: &TextureMap<G, TileTextureIndex>,
-    ) {
+        _render_context: &mut RenderContext<'font, Texture>,
+        render_args: &RenderArgs,
+    ) -> Self::RR {
         match self {
             MenuState::InGame(game_state) => {
                 clear(crate::game::color::D_RED, gl);
-                game_state.draw_game(args, context, gl, texture_map);
+                game_state.draw_game(render_args, context, gl, texture_map);
             }
             _ => {
                 clear(crate::game::color::BLUE, gl);
@@ -142,7 +96,23 @@ impl Menu for MenuState {
         }
     }
 
-    fn update(&mut self, ui: &mut UiCell, ids: &mut Ids, args: UpdateArgs) {
+    fn input(
+        &mut self,
+        _gui: &mut Self::GUI,
+        _event: Input,
+        _event_loop: &mut Events,
+        _window: &mut PistonWindow,
+    ) -> Self::IR {
+        unimplemented!()
+    }
+
+    fn update(
+        &mut self,
+        _gui: &mut Self::GUI,
+        (ui, ids): &mut Self::UP,
+        update_args: UpdateArgs,
+        _window: &mut PistonWindow,
+    ) -> Self::UR {
         match self {
             MenuState::PauseMenu(_state) => {
                 widget::Text::new("Pause Menu")
@@ -194,7 +164,7 @@ impl Menu for MenuState {
                         }
 
                         // Rotate 2 radians per second.
-                        *rotation += 8.0 * args.dt;
+                        *rotation += 8.0 * update_args.dt;
 
                         let mut key_map: BTreeMap<Key, Action> = BTreeMap::new();
 
@@ -213,6 +183,41 @@ impl Menu for MenuState {
                 }
                 state.handle_input();
             }
+        }
+    }
+}
+
+impl Menu for MenuState {
+    fn menu_name(&self) -> Cow<'static, str> {
+        match self {
+            MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
+            MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
+            MenuState::InGame(_) => Cow::Borrowed(""),
+        }
+    }
+
+    fn handle_input(&self, event: piston_window::Input) {
+        use piston_window::{Button, ButtonArgs, ButtonState};
+        match self {
+            MenuState::InGame(state) => {
+                if let GameState::GameState { keys_down, .. } = state {
+                    if let piston_window::Input::Button(ButtonArgs {
+                        button: Button::Keyboard(key),
+                        state: button_state,
+                        ..
+                    }) = event
+                    {
+                        match button_state {
+                            ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
+                            ButtonState::Release => {
+                                keys_down.try_borrow_mut().unwrap().remove(&key)
+                            }
+                        };
+                        trace!("{:?}", key);
+                    };
+                }
+            }
+            _ => {}
         }
     }
 

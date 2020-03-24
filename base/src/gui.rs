@@ -1,48 +1,54 @@
-use conrod_core::{widget, Borderable, Colorable, Labelable, Positionable, Widget};
 use learning_conrod_core::gui::{cache_queued_glyphs, create_ui, Application, RenderContext, GUI};
 //use piston::window::Window;
 use crate::gui::App::{Editor, Game, Selection};
 use crate::gui::AppResult::{KeepCurrent, SwitchToSelection};
-use conrod_core::image::Map;
-use conrod_core::input::Button;
-use conrod_core::input::Key;
-use conrod_core::widget_ids;
-use learning_conrod_game::create_app;
+use conrod_core::{
+    image::Map, input::Button, input::Key, widget, widget_ids, Borderable, Colorable, Labelable,
+    Positionable, Widget,
+};
+use learning_conrod_game::{create_game_app, gui::GameIds, GameApp};
 use opengl_graphics::GlGraphics;
+
+use learning_conrod_editor::{create_editor_app, EditorApp, EditorIds};
+use log::info;
 use piston_window::{
-    ButtonArgs, ButtonState, Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs, Window,
+    ButtonArgs, ButtonState, Context, Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs,
+    Window,
 };
 
-use log::info;
-
 pub enum App {
-    Game(learning_conrod_game::App),
-    Editor(()),
-    Selection(SelectionGUI),
+    Game(GameApp, GUI<GameIds>),
+    Editor(EditorApp, GUI<EditorIds>),
+    Selection(SelectionGUI, GUI<Ids>),
 }
 
 impl App {
     fn perform_action(&mut self, action: AppResult, window: &mut PistonWindow) {
         let fullscreen = match self {
-            Game(app) => app.gui().fullscreen,
-            Editor(_) => unimplemented!(),
-            Selection(SelectionGUI { gui, .. }) => gui.fullscreen,
+            Game(_, gui) => gui.fullscreen,
+            Editor(_, gui) => gui.fullscreen,
+            Selection(_, gui) => gui.fullscreen,
         };
 
         match action {
             AppResult::KeepCurrent => {}
             AppResult::SwitchToGame => {
                 //TODO handle create_app Err better
-                let mut app = create_app(window).expect("TODO handle this better");
-                app.set_fullscreen(window, fullscreen);
-                *self = Game(app)
+                let (app, mut gui) = create_game_app(window).expect("TODO handle this better");
+                gui.set_fullscreen(window, fullscreen);
+                *self = Game(app, gui)
             }
-            AppResult::SwitchToEditor => *self = Editor(unimplemented!()),
+            AppResult::SwitchToEditor => {
+                //TODO handle create_app Err better
+                let (app, mut gui) = create_editor_app(window).expect("TODO handle this better");
+                gui.set_fullscreen(window, fullscreen);
+                *self = Editor(app, gui)
+            }
             AppResult::SwitchToSelection => {
                 //TODO handle create_gui Err better
-                let mut app = create_gui(window).expect("TODO handle this better");
-                app.gui.fullscreen = fullscreen;
-                *self = Selection(app)
+                let (app, mut gui) = create_gui(window).expect("TODO handle this better");
+                gui.fullscreen = fullscreen;
+                *self = Selection(app, gui)
             }
             AppResult::Exit => {
                 window.set_should_close(true);
@@ -51,53 +57,74 @@ impl App {
     }
 }
 
-impl Application for App {
+impl Application<'_> for App {
     type RR = ();
     type IR = ();
     type UR = ();
+    type GUI = ();
+    type RP = ();
+    type UP = ();
 
     fn render<'font>(
         &self,
-        render_context: &mut RenderContext<'font, GlGraphics>,
+        _gui: &Self::GUI,
+        _rp: &Self::RP,
+        gl: &mut GlGraphics,
+        context: Context,
+        render_context: &mut RenderContext<'font>,
         render_args: &RenderArgs,
     ) -> Self::RR {
         match self {
-            Self::Game(app) => {
-                app.render(render_context, render_args);
+            Self::Game(game_app, gui) => {
+                game_app.render(gui, &(), gl, context, render_context, render_args);
             }
-            Self::Editor(_app) => unimplemented!(),
-            Self::Selection(app) => {
-                app.render(render_context, render_args);
+            Self::Editor(editor_app, gui) => {
+                editor_app.render(gui, &(), gl, context, render_context, render_args)
+            }
+            Self::Selection(selection_app, gui) => {
+                selection_app.render(gui, &(), gl, context, render_context, render_args);
             }
         };
     }
 
     fn input(
         &mut self,
+        _gui: &mut Self::GUI,
         event: Input,
         event_loop: &mut Events,
         window: &mut PistonWindow,
     ) -> Self::IR {
         match self {
-            Self::Game(app) => {
-                app.input(event, event_loop, window);
+            Self::Game(app, gui) => {
+                app.input(gui, event, event_loop, window);
             }
-            Self::Editor(_app) => unimplemented!(),
-            Self::Selection(app) => {
-                let result = app.input(event, event_loop, window);
+            Self::Editor(app, gui) => app.input(gui, event, event_loop, window),
+            Self::Selection(app, gui) => {
+                let result = app.input(gui, event, event_loop, window);
                 self.perform_action(result, window);
             }
         };
     }
 
-    fn update(&mut self, update_args: UpdateArgs, window: &mut PistonWindow) -> Self::UR {
+    fn update(
+        &mut self,
+        _gui: &mut Self::GUI,
+        _up: &mut Self::UP,
+        update_args: UpdateArgs,
+        window: &mut PistonWindow,
+    ) -> Self::UR {
         let action = match self {
-            Self::Game(app) => match app.update(update_args, window) {
+            Self::Game(game_app, gui) => match game_app.update(gui, &mut (), update_args, window) {
                 learning_conrod_game::UpdateAction::Nothing => KeepCurrent,
                 learning_conrod_game::UpdateAction::Close => SwitchToSelection,
             },
-            Self::Editor(_app) => unimplemented!(),
-            Self::Selection(app) => app.update(update_args, window),
+            Self::Editor(editor_app, gui) => {
+                editor_app.update(gui, &mut (), update_args, window);
+                KeepCurrent
+            }
+            Self::Selection(selection_app, gui) => {
+                selection_app.update(gui, &mut (), update_args, window)
+            }
         };
         self.perform_action(action, window);
     }
@@ -113,9 +140,7 @@ widget_ids! {
     }
 }
 
-pub struct SelectionGUI {
-    gui: GUI<Ids>,
-}
+pub struct SelectionGUI {}
 
 pub enum AppResult {
     KeepCurrent,
@@ -125,7 +150,7 @@ pub enum AppResult {
     Exit,
 }
 
-pub fn create_gui(window: &PistonWindow) -> Result<SelectionGUI, String> {
+pub fn create_gui(window: &PistonWindow) -> Result<(SelectionGUI, GUI<Ids>), String> {
     let mut ui = create_ui(window);
 
     // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
@@ -136,31 +161,38 @@ pub fn create_gui(window: &PistonWindow) -> Result<SelectionGUI, String> {
     let generator = ui.widget_id_generator();
     let ids = Ids::new(generator);
 
-    Ok(SelectionGUI {
-        gui: GUI {
+    Ok((
+        SelectionGUI {},
+        GUI {
             ui,
             ids,
             image_ids: vec![],
             image_map,
             fullscreen: false,
         },
-    })
+    ))
 }
 
-impl Application for SelectionGUI {
+impl Application<'_> for SelectionGUI {
     type RR = ();
     type IR = AppResult;
     type UR = AppResult;
+    type GUI = GUI<Ids>;
+    type RP = ();
+    type UP = ();
 
     fn render(
         &self,
-        render_context: &mut RenderContext<GlGraphics>,
+        gui: &Self::GUI,
+        _rp: &Self::RP,
+        gl: &mut GlGraphics,
+        context: Context,
+        render_context: &mut RenderContext,
         _render_args: &RenderArgs,
     ) -> Self::RR {
         //TODO menu to select between game and editor should be presented here!
 
         let RenderContext {
-            gl,
             glyph_cache,
             text_texture_cache,
             text_vertex_data,
@@ -169,24 +201,26 @@ impl Application for SelectionGUI {
 
         let cache_queued_glyphs = cache_queued_glyphs(text_vertex_data);
 
-        gl.draw(_render_args.viewport(), |c, gl| {
-            self.gui
-                .draw(text_texture_cache, glyph_cache, cache_queued_glyphs, c, gl);
-        });
+        gui.draw(
+            text_texture_cache,
+            glyph_cache,
+            cache_queued_glyphs,
+            context,
+            gl,
+        );
     }
 
     fn input(
         &mut self,
+        gui: &mut Self::GUI,
         event: Input,
         _event_loop: &mut Events,
         window: &mut PistonWindow,
     ) -> Self::IR {
-        if let Some(cr_event) = conrod_piston::event::convert(
-            Event::Input(event.clone()),
-            self.gui.ui.win_w,
-            self.gui.ui.win_h,
-        ) {
-            self.gui.ui.handle_event(cr_event);
+        if let Some(cr_event) =
+            conrod_piston::event::convert(Event::Input(event.clone()), gui.ui.win_w, gui.ui.win_h)
+        {
+            gui.ui.handle_event(cr_event);
         }
 
         match &event {
@@ -199,15 +233,15 @@ impl Application for SelectionGUI {
                 state: ButtonState::Release,
                 ..
             }) => {
-                if self.gui.fullscreen {
+                if gui.fullscreen {
                     info!("F11 pressed: Turning off fullscreen!");
                     window.window.window.set_fullscreen(None);
-                    self.gui.fullscreen = false;
+                    gui.fullscreen = false;
                 } else {
                     info!("F11 pressed: Turning on fullscreen!");
                     let monitor = window.window.window.get_current_monitor();
                     window.window.window.set_fullscreen(Some(monitor));
-                    self.gui.fullscreen = true;
+                    gui.fullscreen = true;
                 }
 
                 Self::IR::KeepCurrent
@@ -224,33 +258,39 @@ impl Application for SelectionGUI {
         }
     }
 
-    fn update(&mut self, _update_args: UpdateArgs, _window: &mut PistonWindow) -> Self::UR {
-        let ui = &mut self.gui.ui.set_widgets();
+    fn update(
+        &mut self,
+        gui: &mut Self::GUI,
+        _up: &mut Self::UP,
+        _update_args: UpdateArgs,
+        _window: &mut PistonWindow,
+    ) -> Self::UR {
+        let ui = &mut gui.ui.set_widgets();
 
         widget::canvas::Canvas::new()
             .border_rgba(0.0, 0.0, 0.0, 0.0)
             .rgba(1.0, 1.0, 1.0, 1.0)
-            .set(self.gui.ids.main_canvas, ui);
+            .set(gui.ids.main_canvas, ui);
 
         widget::Text::new("Main Menu")
             .font_size(30)
-            .mid_top_of(self.gui.ids.main_canvas)
-            .set(self.gui.ids.menu_title, ui);
+            .mid_top_of(gui.ids.main_canvas)
+            .set(gui.ids.menu_title, ui);
 
         let game = widget::Button::new()
             .label("Game")
-            .down_from(self.gui.ids.menu_title, 10.0)
-            .set(self.gui.ids.game_button, ui);
+            .down_from(gui.ids.menu_title, 10.0)
+            .set(gui.ids.game_button, ui);
 
         let editor = widget::Button::new()
             .label("Editor")
-            .down_from(self.gui.ids.game_button, 10.0)
+            .down_from(gui.ids.game_button, 10.0)
             .enabled(false)
-            .set(self.gui.ids.editor_button, ui);
+            .set(gui.ids.editor_button, ui);
         let quit = widget::Button::new()
             .label("Quit")
-            .down_from(self.gui.ids.editor_button, 10.0)
-            .set(self.gui.ids.quit_button, ui);
+            .down_from(gui.ids.editor_button, 10.0)
+            .set(gui.ids.quit_button, ui);
 
         if quit.was_clicked() {
             AppResult::Exit

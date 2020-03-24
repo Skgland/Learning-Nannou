@@ -466,9 +466,7 @@ pub mod loading {
         }
     }
 
-    pub(crate) fn load_levels(
-        asset_path: &std::path::Path,
-    ) -> Result<Vec<LevelTemplate>, LoadingError> {
+    pub fn load_levels(asset_path: &std::path::Path) -> Result<Vec<LevelTemplate>, LoadingError> {
         let path = asset_path.join("levels");
         let mut levels = vec![];
 

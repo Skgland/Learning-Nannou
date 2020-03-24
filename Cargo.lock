@@ -616,6 +616,15 @@ dependencies = [
 [[package]]
 name = "learning_conrod_editor"
 version = "0.1.0"
+dependencies = [
+ "conrod_core 0.69.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "derive_macros 0.1.0",
+ "derive_macros_helpers 0.1.0",
+ "learning_conrod_core 0.1.0",
+ "learning_conrod_game 0.1.0",
+ "piston2d-opengl_graphics 0.60.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston_window 0.89.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "learning_conrod_game"

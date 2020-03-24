@@ -30,22 +30,28 @@ fn main() -> Result<(), MainError> {
     let mut window = create_window()?;
 
     trace!("Creating render Context!");
-    let mut context = create_render_context();
+    let (mut render_context, mut gl) = create_render_context();
 
     trace!("Creating event loop iterator");
     let mut event_loop = Events::new(EventSettings::new());
 
     trace!("Construction base gui!");
 
-    let mut app = App::Selection(create_gui(&window)?);
+    let (app, gui) = create_gui(&window)?;
+
+    let mut app = App::Selection(app, gui);
 
     info!("Press G to start game, E to start editor or ESC to exit!");
 
     while let Some(e) = event_loop.next(&mut window) {
-        e.render(|r| app.render(&mut context, r));
-        e.update(|u| app.update(*u, &mut window));
+        e.render(|r| {
+            gl.draw(r.viewport(), |context, gl| {
+                app.render(&(), &(), gl, context, &mut render_context, r)
+            })
+        });
+        e.update(|u| app.update(&mut (), &mut (), *u, &mut window));
         if let Event::Input(i) = e {
-            app.input(i.clone(), &mut event_loop, &mut window);
+            app.input(&mut (), i.clone(), &mut event_loop, &mut window);
         }
     }
 
@@ -94,17 +100,17 @@ fn create_window() -> Result<PistonWindow, MainError> {
         .map_err(|e| e.into())
 }
 
-fn create_render_context<'font>() -> RenderContext<'font, opengl_graphics::GlGraphics> {
+fn create_render_context<'font>() -> (RenderContext<'font>, GlGraphics) {
     let TextCache {
         text_vertex_data,
         glyph_cache,
         text_texture_cache,
     } = create_text_cache(&());
     let gl = GlGraphics::new(OPEN_GL_VERSION);
-    RenderContext {
+    let render_context = RenderContext {
         text_texture_cache,
         glyph_cache,
         text_vertex_data,
-        gl,
-    }
+    };
+    (render_context, gl)
 }

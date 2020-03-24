@@ -13,12 +13,11 @@ use piston_window::{OpenGL, PistonWindow};
 
 use log::{error, trace};
 
-pub use app::{App, UpdateAction};
-use learning_conrod_core::{get_asset_path, gui::create_ui, gui::GUI};
+pub use app::{GameApp, UpdateAction};
+use learning_conrod_core::{get_asset_path, gui::create_ui, gui::load_textures, gui::GUI};
 
 //
 //Initial Setting
-//
 
 // Change this to OpenGL::V2_1 if not working.
 
@@ -34,9 +33,7 @@ fn startup() {
     }
 }
 
-use learning_conrod_core::gui::load_textures;
-
-pub fn create_app(window: &PistonWindow) -> Result<App, String> {
+pub fn create_game_app(window: &PistonWindow) -> Result<(GameApp, GUI<GameIds>), String> {
     startup();
 
     let mut ui = create_ui(window);
@@ -53,11 +50,12 @@ pub fn create_app(window: &PistonWindow) -> Result<App, String> {
 
     // Instantiate the generated list of widget identifiers.
     let generator = ui.widget_id_generator();
-    let ids = Ids::new(generator);
+    let ids = GameIds::new(generator);
 
     let init_menu = MenuState::open_level_selection();
 
-    Ok(App::new(
+    Ok((
+        GameApp::new(texture_map, init_menu),
         GUI {
             ui,
             ids,
@@ -65,7 +63,5 @@ pub fn create_app(window: &PistonWindow) -> Result<App, String> {
             image_map,
             fullscreen: false,
         },
-        texture_map,
-        init_menu,
     ))
 }

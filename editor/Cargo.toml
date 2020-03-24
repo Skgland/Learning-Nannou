@@ -8,3 +8,10 @@ edition = "2018"
 [lib]
 
 [dependencies]
+derive_macros = {path="../derive_macros"}
+derive_macros_helpers = {path="../derive_macros_helpers"}
+learning_conrod_core = {path="../core"}
+learning_conrod_game = {path="../game"}
+conrod_core = "0.69.0"
+piston_window = "0.89.0"
+piston2d-opengl_graphics = "0.60.0"
