@@ -1,9 +1,13 @@
-use super::*;
-use crate::TextureMap;
+use piston_window::{image, rectangle, texture::ImageSize, Context, Graphics, Transformed};
+
 use derive_macros::*;
 use derive_macros_helpers::*;
 
+use crate::game::{GameState, TILE_SIZE};
+use learning_conrod_core::gui::TextureMap;
 use log::{error, trace};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LevelTemplate {
@@ -237,16 +241,14 @@ impl TileType {
         &self,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        texture_map: &TextureMap<G, TileTextureIndex>,
         coord: &ObjectCoordinate,
         state: &GameState,
     ) where
         G::Texture: ImageSize,
     {
         if let GameState::GameState { position, .. } = state {
-            use graphics::*;
-
-            use self::color::*;
+            use super::color::*;
 
             let rect = [0.0, 0.0, TILE_SIZE, TILE_SIZE];
 
@@ -316,7 +318,7 @@ impl TileType {
             },
             TileType::Gate {
                 open: false,
-                facing,
+                facing: _,
                 hidden: GateVisibility::Hidden(mimic),
             } => mimic.tile_texture_id(),
         }
@@ -338,12 +340,18 @@ impl TileTextureIndex {
                 facing.file_modifier()
             ),
             TileTextureIndex::Ladder => "ladder".to_string(),
-            TileTextureIndex::OneWay { facing } => format!("one_way{}", facing.file_modifier()),
+            TileTextureIndex::OneWay { facing } => format!("one_way_{}", facing.file_modifier()),
             TileTextureIndex::Wall { kind } => format!("wall_{}", kind.file_modifier()),
             TileTextureIndex::Button { pressed } => {
                 format!("button{}", if *pressed { "_pressed" } else { "" })
             }
         }
+    }
+}
+
+impl ToString for TileTextureIndex {
+    fn to_string(&self) -> String {
+        self.file_name()
     }
 }
 
@@ -364,7 +372,7 @@ pub struct Connections {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GateVisibility {
     Visible,
-    Hidden(Box<level::TileType>),
+    Hidden(Box<TileType>),
 }
 
 pub mod saving {
@@ -458,9 +466,7 @@ pub mod loading {
         }
     }
 
-    pub(crate) fn load_levels(
-        asset_path: &std::path::Path,
-    ) -> Result<Vec<LevelTemplate>, LoadingError> {
+    pub fn load_levels(asset_path: &std::path::Path) -> Result<Vec<LevelTemplate>, LoadingError> {
         let path = asset_path.join("levels");
         let mut levels = vec![];
 

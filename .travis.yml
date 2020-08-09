@@ -4,14 +4,18 @@ rust:
 - beta
 - nightly
 os:
-- linux
 - osx
+- linux
 - windows
 dist: bionic
+addons:
+  apt: 
+    packages:
+    - libxcb-shape0-dev
+    - libxcb-xfixes0-dev
 jobs:
   allow_failures:
   - rust: nightly
-  - os: linux
   fast_finish: true
 deploy:
   provider: releases

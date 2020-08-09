@@ -1,18 +1,11 @@
-#![allow(dead_code, unused_variables)]
-
-use graphics::{rectangle, Context, Graphics, ImageSize};
-use piston_window::Transformed;
-use serde::{Deserialize, Serialize};
-use std::collections::btree_map::BTreeMap;
-
-use crate::TextureMap;
 use conrod_core::input::RenderArgs;
 pub use level::*;
-use piston::input::Key;
+use piston_window::{rectangle, Context, Graphics, Key, Transformed};
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
+use learning_conrod_core::gui::TextureMap;
 use log::trace;
 
 pub mod color;
@@ -106,7 +99,7 @@ impl GameState {
         args: &RenderArgs,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         if let GameState::GameState { level_state, .. } = self {
             let (x, y) = (args.width / 2.0, args.height / 2.0);
@@ -121,15 +114,13 @@ impl GameState {
 
             self.draw_player(c, gl, texture_map);
         }
-
-        use ::graphics::*;
     }
 
     pub fn draw_player<G: Graphics>(
         &self,
         context: Context,
         gl: &mut G,
-        texture_map: &TextureMap<G>,
+        _texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         if let GameState::GameState { rotation, .. } = self {
             let transform = context
@@ -143,5 +134,5 @@ impl GameState {
 
 pub const TILE_SIZE: f64 = 64.0;
 pub const PLAYER_SIZE: f64 = 45.0;
-const PLAYER_SQUARE: graphics::types::Rectangle = [0.0, 0.0, PLAYER_SIZE, PLAYER_SIZE];
+const PLAYER_SQUARE: piston_window::types::Rectangle = [0.0, 0.0, PLAYER_SIZE, PLAYER_SIZE];
 const PLAYER_COLOR: color::Color = color::RED;
