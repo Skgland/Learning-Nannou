@@ -12,7 +12,11 @@ jobs:
   - rust: nightly
   include:
   - os: linux
-    install: apt-get install libxcb-shape0-dev libxcb-xfixes0-dev
+    rust:
+    - stable
+    - beta
+    - nightly
+    install: sudo apt-get -y install libxcb-shape0-dev libxcb-xfixes0-dev
   fast_finish: true
 deploy:
   provider: releases
