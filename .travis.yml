@@ -4,14 +4,15 @@ rust:
 - beta
 - nightly
 os:
-- linux
 - osx
 - windows
 dist: bionic
 jobs:
   allow_failures:
   - rust: nightly
+  include:
   - os: linux
+    install: apt-get install libxcb-shape0-dev libxcb-xfixes0-dev
   fast_finish: true
 deploy:
   provider: releases
