@@ -5,18 +5,17 @@ rust:
 - nightly
 os:
 - osx
+- linux
 - windows
 dist: bionic
+addons:
+  apt: 
+    packages:
+    - libxcb-shape0-dev
+    - libxcb-xfixes0-dev
 jobs:
   allow_failures:
   - rust: nightly
-  include:
-  - os: linux
-    rust:
-    - stable
-    - beta
-    - nightly
-    install: sudo apt-get -y install libxcb-shape0-dev libxcb-xfixes0-dev
   fast_finish: true
 deploy:
   provider: releases
