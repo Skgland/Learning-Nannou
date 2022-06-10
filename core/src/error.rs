@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter};
-use std::error::Error;
 use crate::error::MainError::Dyn;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum MainError {
@@ -47,7 +47,7 @@ impl Display for MainError {
             MainError::DeserializeError(e) => Display::fmt(e, f),
             MainError::SerializeError(e) => Display::fmt(e, f),
             MainError::IOError(e) => Display::fmt(e, f),
-            MainError::Dyn(e) => Display::fmt(e,f),
+            MainError::Dyn(e) => Display::fmt(e, f),
             MainError::Custom(e) => Display::fmt(e, f),
         }
     }
