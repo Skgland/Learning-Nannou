@@ -50,7 +50,7 @@ fn main() -> Result<(), MainError> {
             })
         });
         e.update(|u| app.update(&mut (), &mut (), *u, &mut window));
-        if let Event::Input(i) = e {
+        if let Event::Input(i, _) = e {
             app.input(&mut (), i.clone(), &mut event_loop, &mut window);
         }
     }
@@ -93,7 +93,7 @@ fn create_text_cache(_: &()) -> TextCache {
 fn create_window() -> Result<PistonWindow, MainError> {
     // Create an Glutin window.
     WindowSettings::new("Learning Conrod", [INIT_WIDTH, INIT_HEIGHT])
-        .opengl(OPEN_GL_VERSION)
+        .graphics_api(OPEN_GL_VERSION)
         .vsync(true)
         .fullscreen(false)
         .build()

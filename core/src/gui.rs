@@ -76,11 +76,14 @@ impl<Ids> GUI<Ids> {
 
     pub fn set_fullscreen(&mut self, window: &mut PistonWindow, fullscreen: bool) {
         if fullscreen {
-            let monitor = window.window.window.get_current_monitor();
-            window.window.window.set_fullscreen(Some(monitor));
+            window
+                .window
+                .ctx
+                .window()
+                .set_fullscreen(Some(glutin::window::Fullscreen::Borderless(None)));
             self.fullscreen = true;
         } else {
-            window.window.window.set_fullscreen(None);
+            window.window.ctx.window().set_fullscreen(None);
             self.fullscreen = false;
         }
     }

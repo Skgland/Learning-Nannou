@@ -4,8 +4,8 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum MainError {
-    SerializeError(ron::ser::Error),
-    DeserializeError(ron::de::Error),
+    RONError(ron::Error),
+
     IOError(std::io::Error),
     Dyn(Box<dyn Error>),
     Custom(String),
@@ -17,21 +17,15 @@ impl From<Box<dyn Error>> for MainError {
     }
 }
 
-impl From<ron::ser::Error> for MainError {
-    fn from(se: ron::ser::Error) -> Self {
-        MainError::SerializeError(se)
-    }
-}
-
 impl From<std::io::Error> for MainError {
     fn from(io: std::io::Error) -> Self {
         MainError::IOError(io)
     }
 }
 
-impl From<ron::de::Error> for MainError {
+impl From<ron::Error> for MainError {
     fn from(de: ron::de::Error) -> Self {
-        MainError::DeserializeError(de)
+        MainError::RONError(de)
     }
 }
 
@@ -44,8 +38,7 @@ impl From<String> for MainError {
 impl Display for MainError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            MainError::DeserializeError(e) => Display::fmt(e, f),
-            MainError::SerializeError(e) => Display::fmt(e, f),
+            MainError::RONError(e) => Display::fmt(e, f),
             MainError::IOError(e) => Display::fmt(e, f),
             MainError::Dyn(e) => Display::fmt(e, f),
             MainError::Custom(e) => Display::fmt(e, f),

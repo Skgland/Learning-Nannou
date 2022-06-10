@@ -84,9 +84,11 @@ impl Application<'_> for GameApp {
         _event_loop: &mut Events,
         _window: &mut PistonWindow,
     ) {
-        if let Some(cr_event) =
-            conrod_piston::event::convert(Event::Input(event.clone()), gui.ui.win_w, gui.ui.win_h)
-        {
+        if let Some(cr_event) = conrod_piston::event::convert(
+            Event::Input(event.clone(), None),
+            gui.ui.win_w,
+            gui.ui.win_h,
+        ) {
             gui.ui.handle_event(cr_event);
         }
 

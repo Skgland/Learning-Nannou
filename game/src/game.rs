@@ -102,7 +102,7 @@ impl GameState {
         texture_map: &TextureMap<G, TileTextureIndex>,
     ) {
         if let GameState::GameState { level_state, .. } = self {
-            let (x, y) = (args.width / 2.0, args.height / 2.0);
+            let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
 
             let c = context.trans(x, y);
 

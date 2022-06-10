@@ -217,9 +217,11 @@ impl Application<'_> for SelectionGUI {
         _event_loop: &mut Events,
         window: &mut PistonWindow,
     ) -> Self::IR {
-        if let Some(cr_event) =
-            conrod_piston::event::convert(Event::Input(event.clone()), gui.ui.win_w, gui.ui.win_h)
-        {
+        if let Some(cr_event) = conrod_piston::event::convert(
+            Event::Input(event.clone(), None),
+            gui.ui.win_w,
+            gui.ui.win_h,
+        ) {
             gui.ui.handle_event(cr_event);
         }
 
@@ -235,12 +237,15 @@ impl Application<'_> for SelectionGUI {
             }) => {
                 if gui.fullscreen {
                     info!("F11 pressed: Turning off fullscreen!");
-                    window.window.window.set_fullscreen(None);
+                    window.window.ctx.window().set_fullscreen(None);
                     gui.fullscreen = false;
                 } else {
                     info!("F11 pressed: Turning on fullscreen!");
-                    let monitor = window.window.window.get_current_monitor();
-                    window.window.window.set_fullscreen(Some(monitor));
+                    window
+                        .window
+                        .ctx
+                        .window()
+                        .set_fullscreen(Some(glutin::window::Fullscreen::Borderless(None)));
                     gui.fullscreen = true;
                 }
 
