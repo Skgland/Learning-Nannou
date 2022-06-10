@@ -377,7 +377,6 @@ pub enum GateVisibility {
 
 pub mod saving {
     use crate::game::LevelTemplate;
-    use serde::ser::Serialize;
     use std::fmt::{Display, Formatter};
     use std::fs::File;
     use std::io::Write;
@@ -386,7 +385,7 @@ pub mod saving {
 
     pub enum SavingError {
         IO(std::io::Error),
-        Serialize(ron::ser::Error),
+        Serialize(ron::Error),
     }
 
     impl Display for SavingError {
@@ -404,8 +403,8 @@ pub mod saving {
         }
     }
 
-    impl From<ron::ser::Error> for SavingError {
-        fn from(ser_err: ron::ser::Error) -> Self {
+    impl From<ron::Error> for SavingError {
+        fn from(ser_err: ron::Error) -> Self {
             SavingError::Serialize(ser_err)
         }
     }
@@ -414,19 +413,14 @@ pub mod saving {
         path: &std::path::Path,
         level: &LevelTemplate,
     ) -> Result<(), SavingError> {
-        let pretty = ron::ser::PrettyConfig {
-            depth_limit: !0,
-            new_line: "\n".to_string(),
-            indentor: "\t".to_string(),
-            separate_tuple_members: false,
-            enumerate_arrays: false,
-        };
+        let pretty = ron::ser::PrettyConfig::default()
+            .depth_limit(!0)
+            .new_line("\n".into())
+            .indentor("\t".into())
+            .separate_tuple_members(false)
+            .enumerate_arrays(false);
 
-        let mut serializer = ron::ser::Serializer::new(Some(pretty), true);
-
-        level.serialize(&mut serializer)?;
-
-        let out = serializer.into_output_string();
+        let out = ron::ser::to_string_pretty(level, pretty)?;
 
         if let Some(parent) = path.parent() {
             //path does not exist try to create it

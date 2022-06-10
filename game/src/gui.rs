@@ -18,7 +18,7 @@ use crate::game::TileTextureIndex;
 use learning_conrod_core::gui::TextureMap;
 use learning_conrod_core::{
     get_asset_path,
-    gui::{Application, RenderContext, GUI},
+    gui::{Application, RenderContext},
 };
 use log::trace;
 use opengl_graphics::{GlGraphics, Texture};

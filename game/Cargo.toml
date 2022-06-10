@@ -10,10 +10,10 @@ edition = "2018"
 derive_macros = {path="../derive_macros"}
 derive_macros_helpers = {path="../derive_macros_helpers"}
 learning_conrod_core = {path="../core"}
-piston2d-opengl_graphics = "0.60.0"
-piston_window = "0.89.0"
-conrod_core = "0.69.0"
-conrod_piston = "0.69.0"
-serde = { version = "1.0.105", features = ["derive"] }
-ron= "0.5.1"
-log = "0.4.8"
+conrod_core = "0.76.1"
+conrod_piston = "0.76.1"
+piston_window = { version = "0.120.0" , features = ["glutin"]}
+piston2d-opengl_graphics = "0.78.0"
+serde = { version = "1.0.137", features = ["derive"] }
+ron= "0.7.0"
+log = "0.4.17"
