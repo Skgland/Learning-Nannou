@@ -15,5 +15,5 @@ conrod_piston = "0.76.1"
 piston_window = { version = "0.120.0" , features = ["glutin"]}
 piston2d-opengl_graphics = "0.78.0"
 serde = { version = "1.0.139", features = ["derive"] }
-ron= "0.7.0"
+ron= "0.7.1"
 log = "0.4.17"
