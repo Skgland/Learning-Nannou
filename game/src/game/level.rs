@@ -446,6 +446,7 @@ pub mod loading {
     pub enum LoadingError {
         IO(std::io::Error),
         Deserialize(ron::de::Error),
+        Spanned(ron::error::SpannedError),
     }
 
     impl From<std::io::Error> for LoadingError {
@@ -457,6 +458,12 @@ pub mod loading {
     impl From<ron::de::Error> for LoadingError {
         fn from(de_err: ron::de::Error) -> Self {
             LoadingError::Deserialize(de_err)
+        }
+    }
+
+    impl From<ron::error::SpannedError> for LoadingError {
+        fn from(de_err: ron::error::SpannedError) -> Self {
+            LoadingError::Spanned(de_err)
         }
     }
 
