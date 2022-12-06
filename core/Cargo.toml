@@ -11,7 +11,7 @@ derive_macros_helpers = {path = "../derive_macros_helpers"}
 conrod_core = "0.76.1"
 conrod_piston = "0.76.1"
 piston_window = { version = "0.120.0" , features = ["glutin"]}
-piston2d-opengl_graphics = "0.78.0"
+piston2d-opengl_graphics = "0.82.0"
 glutin = "0.26.0"
 ron= "0.8.0"
 find_folder = "0.3.0"

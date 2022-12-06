@@ -14,4 +14,4 @@ learning_conrod_core = {path="../core"}
 learning_conrod_game = {path="../game"}
 conrod_core = "0.76.1"
 piston_window = { version = "0.120.0" , features = ["glutin"]}
-piston2d-opengl_graphics = "0.78.0"
+piston2d-opengl_graphics = "0.82.0"
