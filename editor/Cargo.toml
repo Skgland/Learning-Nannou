@@ -13,5 +13,5 @@ derive_macros_helpers = {path="../derive_macros_helpers"}
 learning_conrod_core = {path="../core"}
 learning_conrod_game = {path="../game"}
 conrod_core = "0.76.1"
-piston_window = { version = "0.120.0" , features = ["glutin"]}
+piston_window = { version = "0.127.0" , features = ["glutin"]}
 piston2d-opengl_graphics = "0.78.0"
