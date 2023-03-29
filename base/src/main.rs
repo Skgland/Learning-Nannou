@@ -13,7 +13,6 @@ use piston_window::{
     WindowSettings,
 };
 
-use env_logger::Env;
 use log::{info, trace};
 
 const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
@@ -25,7 +24,11 @@ mod gui;
 use gui::{create_gui, App};
 
 fn main() -> Result<(), MainError> {
-    env_logger::from_env(Env::default().default_filter_or("warn,learning_conrod=trace")).init();
+    env_logger::Builder::default()
+        .filter_level(log::LevelFilter::Warn)
+        .filter_module("learning_conrod", log::LevelFilter::Trace)
+        .parse_default_env()
+        .init();
 
     let mut window = create_window()?;
 
