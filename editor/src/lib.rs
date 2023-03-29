@@ -1,15 +1,11 @@
-use conrod_core::widget_ids;
+
 use derive_macros::{Bounded, Enumerable};
 use derive_macros_helpers::{Bounded, Enumerable};
-use learning_conrod_core::gui::{
-    cache_queued_glyphs, create_ui, load_textures, Application, RenderContext, TextureMap, GUI,
-};
-use learning_conrod_game::game::color::{BLUE, D_RED};
+use learning_conrod_core::gui::{TextureMap, Application, load_textures};
 use learning_conrod_game::game::{LevelTemplate, TileTextureIndex};
-use learning_conrod_game::gui::GameIds;
 use learning_conrod_game::GameApp;
-use opengl_graphics::{GlGraphics, Texture};
-use piston_window::{clear, Context, Events, Input, PistonWindow, RenderArgs, UpdateArgs};
+use nannou::prelude::*;
+use nannou_egui::Egui;
 use std::path::PathBuf;
 
 #[derive(Enumerable, Bounded, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -33,30 +29,17 @@ impl ToString for EditorTextureIndex {
     }
 }
 
-widget_ids! {
-    pub struct EditorIds {
-        main_canvas,
-        menu_title,
-        level_buttons[],
-        level_load_button,
-        level_create_button,
-        level_name_textbox,
-        options_button,
-        back_button,
-    }
-}
-
 pub struct EditorApp {
-    texture_map: TextureMap<GlGraphics, EditorTextureIndex>,
+    texture_map: TextureMap<EditorTextureIndex>,
     state: EditorState,
+    egui: Egui
 }
 
 pub enum EditorState {
     MainMenu,
     CreateLevel,
     LoadLevel(Vec<(LevelTemplate, PathBuf)>),
-    Editor(Editor),
-    Game(Editor, GameApp, GUI<GameIds>),
+    Editor(Editor, Option<GameApp>),
 }
 
 pub struct Editor {
@@ -65,57 +48,42 @@ pub struct Editor {
     file: Option<PathBuf>,
 }
 
-impl Application<'_> for EditorState {
-    type RR = ();
-    type IR = ();
-    type UR = ();
-    type GUI = ();
-    type RP = ();
-    type UP = ();
+impl EditorState {
 
-    fn render(
+    fn view(
         &self,
-        gui: &Self::GUI,
-        render_param: &Self::RP,
-        gl: &mut GlGraphics,
-        context: Context,
-        render_context: &mut RenderContext<'_, Texture>,
-        render_args: &RenderArgs,
-    ) -> Self::RR {
+        app: &App,
+        frame: &nannou::Frame,egui: &Egui) {
+
         match self {
-            EditorState::Editor(_) => {
-                clear(D_RED, gl);
+            EditorState::Editor(_, None) => {
+                let draw = app.draw();
+                draw.background().color(nannou::color::named::RED);
+                draw.to_frame(app, &frame).unwrap();
+
                 //TOD draw editor content
             }
-            EditorState::Game(editor, game, gui) => {
-                game.render(gui, &(), gl, context, render_context, render_args);
+            EditorState::Editor(editor, Some(game)) => {
+                game.view(app, frame);
             }
-            _ => clear(BLUE, gl),
+            _ => {
+                let draw = app.draw();
+                draw.background().color(nannou::color::named::BLUE);
+                draw.to_frame(app, &frame).unwrap();
+            },
         }
+        egui.draw_to_frame(&frame).unwrap();
     }
 
-    fn input(
-        &mut self,
-        gui: &mut Self::GUI,
-        event: Input,
-        event_loop: &mut Events,
-        window: &mut PistonWindow,
-    ) -> Self::IR {
-    }
-
-    fn update(
-        &mut self,
-        gui: &mut Self::GUI,
-        _up: &mut Self::UP,
-        update_args: UpdateArgs,
-        window: &mut PistonWindow,
-    ) -> Self::UR {
-    }
 }
 
+
 impl EditorApp {
-    fn new(texture_map: TextureMap<GlGraphics, EditorTextureIndex>) -> EditorApp {
+    fn new(app: &App, window_id: WindowId, texture_map: TextureMap<EditorTextureIndex>) -> EditorApp {
+        let window = app.window(window_id).unwrap();
+        let egui = Egui::from_window(&window);
         EditorApp {
+            egui,
             texture_map,
             state: EditorState::MainMenu,
         }
@@ -123,75 +91,18 @@ impl EditorApp {
 }
 
 impl Application<'_> for EditorApp {
-    type RR = ();
-    type IR = ();
-    type UR = ();
-    type GUI = GUI<EditorIds>;
-    type RP = ();
-    type UP = ();
+    type ViewResult = ();
+    type RawEventResult = ();
+    type UpdateResult = ();
 
-    fn render(
-        &self,
-        gui: &Self::GUI,
-        _rp: &Self::RP,
-        gl: &mut GlGraphics,
-        context: Context,
-        render_context: &mut RenderContext<'_>,
-        render_args: &RenderArgs,
-    ) -> Self::RR {
-        self.state
-            .render(&(), &(), gl, context, render_context, render_args);
-
-        let cached_queued_glyphs = cache_queued_glyphs(&mut render_context.text_vertex_data);
-
-        gui.draw(
-            &mut render_context.text_texture_cache,
-            &mut render_context.glyph_cache,
-            cached_queued_glyphs,
-            context,
-            gl,
-        )
-    }
-
-    fn input(
-        &mut self,
-        _gui: &mut Self::GUI,
-        _event: Input,
-        _event_loop: &mut Events,
-        _window: &mut PistonWindow,
-    ) -> Self::IR {
-        //TODO
-    }
-
-    fn update(
-        &mut self,
-        _gui: &mut Self::GUI,
-        _up: &mut Self::UP,
-        _update_args: UpdateArgs,
-        _window: &mut PistonWindow,
-    ) -> Self::UR {
-        //TODO
+    fn view(&self, app: &App, frame: &Frame) {
+        self.state.view(app, frame, &self.egui);
     }
 }
 
-pub fn create_editor_app(window: &PistonWindow) -> Result<(EditorApp, GUI<EditorIds>), String> {
-    let mut ui = create_ui(window);
+pub fn create_editor_app(app:&App, main_window: WindowId) -> Result<EditorApp, String> {
 
-    let image_map = conrod_core::image::Map::new();
+    let texture_map = load_textures::<EditorTextureIndex>(app);
 
-    let texture_map = load_textures::<EditorTextureIndex>();
-
-    let generator = ui.widget_id_generator();
-    let ids = EditorIds::new(generator);
-
-    Ok((
-        EditorApp::new(texture_map),
-        GUI {
-            ui,
-            image_map,
-            image_ids: vec![],
-            ids,
-            fullscreen: false,
-        },
-    ))
+    Ok(EditorApp::new(app, main_window, texture_map))
 }

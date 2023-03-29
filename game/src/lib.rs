@@ -1,5 +1,3 @@
-use conrod_core::image::Map;
-
 mod app;
 
 pub mod game;
@@ -9,23 +7,16 @@ use gui::*;
 
 use game::TileTextureIndex;
 
-use piston_window::{OpenGL, PistonWindow};
 
 use log::{error, trace};
 
 pub use app::{GameApp, UpdateAction};
-use learning_conrod_core::{get_asset_path, gui::create_ui, gui::load_textures, gui::GUI};
+use learning_conrod_core::{ gui::load_textures};
+use nannou::prelude::*;
 
-//
-//Initial Setting
 
-// Change this to OpenGL::V2_1 if not working.
-
-#[allow(dead_code)]
-const OPEN_GL_VERSION: OpenGL = OpenGL::V3_2;
-
-fn startup() {
-    let path = get_asset_path().join("levels").join("test.level.ron");
+fn startup(app: &App) {
+    let path = app.assets_path().unwrap().join("levels").join("test.level.ron");
 
     trace!("Writing test level to disc!");
     if let Err(e) = game::level::saving::save_level(&path, &game::test_level::test_level()) {
@@ -33,35 +24,12 @@ fn startup() {
     }
 }
 
-pub fn create_game_app(window: &PistonWindow) -> Result<(GameApp, GUI<GameIds>), String> {
-    startup();
+pub fn create_game_app(app: &App, main_window: WindowId) -> Result<GameApp, String> {
+    startup(app);
 
-    let mut ui = create_ui(window);
-
-    // Load the rust logo from file to a piston_window texture.
-    //let test_texture = load_texture("test.png");
-
-    // Create our `conrod_core::image::Map` which describes each of our widget->image mappings.
-    // In our case we have no image, however the macro may be used to list multiple.
-    let image_map: Map<opengl_graphics::Texture> = conrod_core::image::Map::new();
-    //let test_texture = image_map.insert(test_texture);
-
-    let texture_map = load_textures::<TileTextureIndex>();
-
-    // Instantiate the generated list of widget identifiers.
-    let generator = ui.widget_id_generator();
-    let ids = GameIds::new(generator);
+    let texture_map = load_textures::<TileTextureIndex>(app);
 
     let init_menu = MenuState::open_level_selection();
 
-    Ok((
-        GameApp::new(texture_map, init_menu),
-        GUI {
-            ui,
-            ids,
-            image_ids: vec![],
-            image_map,
-            fullscreen: false,
-        },
-    ))
+    Ok(GameApp::new(app, main_window, texture_map, init_menu))
 }

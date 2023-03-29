@@ -1,14 +1,15 @@
 use derive_macros::*;
+use nannou::prelude::*;
+use nannou_egui::{Egui, egui};
+use nannou_egui::egui::Key;
 
 use crate::game::TileTextureIndex;
 use crate::{game::GameState, gui::*};
-use conrod_core::{color::Colorable, input::Key, widget, widget::Widget, Borderable};
-use learning_conrod_core::gui::{cache_queued_glyphs, Application, RenderContext, TextureMap, GUI};
-use opengl_graphics::GlGraphics;
-use piston_window::{Context, Event, Events, Input, PistonWindow, RenderArgs, UpdateArgs};
+use learning_conrod_core::gui::{ Application, TextureMap,};
 
 pub struct GameApp {
-    pub(crate) texture_map: TextureMap<GlGraphics, TileTextureIndex>,
+    egui: Egui,
+    pub(crate) texture_map: TextureMap<TileTextureIndex>,
     pub(crate) current_menu: MenuState,
 }
 
@@ -34,128 +35,47 @@ impl Action {
 }
 
 impl Application<'_> for GameApp {
-    type RR = ();
-    type IR = ();
-    type UR = UpdateAction;
-    type GUI = GUI<GameIds>;
-    type RP = ();
-    type UP = ();
+    type ViewResult = ();
+    type RawEventResult = ();
+    type UpdateResult = UpdateAction;
 
-    fn render(
-        &self,
-        gui: &Self::GUI,
-        _rp: &Self::RP,
-        gl: &mut GlGraphics,
-        context: Context,
-        render_context: &mut RenderContext,
-        render_args: &RenderArgs,
-    ) {
-        #[allow(dead_code)]
-        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-        #[allow(dead_code)]
-        const BLUE: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
-
-        //self.texture_map;
-        self.current_menu.render(
-            &(),
-            &self.texture_map,
-            gl,
-            context,
-            render_context,
-            render_args,
-        );
-
-        // A function used for caching glyphs to the texture cache.
-        let cache_queued_glyphs = cache_queued_glyphs(&mut render_context.text_vertex_data);
-
-        gui.draw(
-            &mut render_context.text_texture_cache,
-            &mut render_context.glyph_cache,
-            cache_queued_glyphs,
-            context,
-            gl,
-        );
+    fn view(
+            &self,
+            app: &nannou::App,
+            frame: &nannou::Frame,
+        ) -> Self::ViewResult {
+            self.current_menu.view(app, frame, &self.egui, &self.texture_map);
     }
 
-    fn input(
-        &mut self,
-        gui: &mut Self::GUI,
-        event: Input,
-        _event_loop: &mut Events,
-        _window: &mut PistonWindow,
-    ) {
-        if let Some(cr_event) = conrod_piston::event::convert(
-            Event::Input(event.clone(), None),
-            gui.ui.win_w,
-            gui.ui.win_h,
-        ) {
-            gui.ui.handle_event(cr_event);
-        }
 
-        self.current_menu.handle_input(event);
+    fn raw_window_event(&mut self, app: &nannou::App, event: &nannou::winit::event::WindowEvent) -> Self::RawEventResult {
+        self.egui.handle_raw_event(event);
     }
+
 
     fn update(
         &mut self,
-        gui: &mut Self::GUI,
-        _up: &mut Self::UP,
-        update_args: UpdateArgs,
-        window: &mut PistonWindow,
-    ) -> UpdateAction {
-        let mut ui = gui.ui.set_widgets();
+        app: &App,
+        update: Update,
+        main_window: WindowId
+    ) -> Self::UpdateResult {
 
-        let mut toggle_fullscreen = false;
+        let ctx = self.egui.begin_frame();
 
-        use conrod_core::event::{Button, Event, Release, Ui};
-        for event in ui.global_input().events() {
-            if let Event::Ui(event) = event {
-                match event {
-                    Ui::Release(
-                        _,
-                        Release {
-                            button: Button::Keyboard(Key::F11),
-                            ..
-                        },
-                    ) => toggle_fullscreen = true,
-                    Ui::Release(
-                        _,
-                        Release {
-                            button: Button::Keyboard(Key::Escape),
-                            ..
-                        },
-                    ) => {
-                        if let UpdateAction::Close = self.current_menu.handle_esc(window) {
-                            return UpdateAction::Close;
-                        }
-                    }
-                    Ui::Release(
-                        _,
-                        Release {
-                            button: Button::Keyboard(Key::F1),
-                            ..
-                        },
-                    ) => {
-                        /*if let HUD(state) | OverlayMenu(_, state) = &mut self.gui.active_menu {
-                            self.gui.active_menu = GameOnly(state.clone());
-                        }*/
-                    }
-                    _ => (),
-                }
+        if ctx.input().key_pressed(Key::Escape) {
+            if let UpdateAction::Close  = self.current_menu.handle_esc(main_window) {
+                return UpdateAction::Close;
             }
         }
 
-        //necessary so that when we stop drawing anything in F1 mode, Resize events will still be processed
-        widget::canvas::Canvas::new()
-            .border_rgba(0.0, 0.0, 0.0, 0.0)
-            .rgba(0.0, 0.0, 0.0, 0.0)
-            .set(gui.ids.main_canvas, &mut ui);
-
-        self.current_menu
-            .update(&mut (), &mut (ui, &mut gui.ids), update_args, window);
-
-        if toggle_fullscreen {
-            gui.toggle_fullscreen(window);
+        // FIXME should be F1, but egui in the version used be nannou_egui does not have that key
+        if ctx.input().key_pressed(Key::H) {
+            // TODO toogle hud
         }
+
+        egui::Window::new("Learning Conrod").show(&ctx, |ui| {
+            self.current_menu.update(app, update, main_window, ui);
+        });
 
         UpdateAction::Nothing
     }
@@ -163,10 +83,15 @@ impl Application<'_> for GameApp {
 
 impl GameApp {
     pub fn new(
-        texture_map: TextureMap<GlGraphics, TileTextureIndex>,
+        app: &App,
+        main_window: WindowId,
+        texture_map: TextureMap<TileTextureIndex>,
         init_menu: MenuState,
     ) -> Self {
+        let main_window = app.window(main_window).unwrap();
+        let egui = Egui::from_window(&main_window);
         GameApp {
+            egui,
             texture_map,
             current_menu: init_menu,
         }

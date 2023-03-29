@@ -1,4 +1,4 @@
-use piston_window::{image, rectangle, texture::ImageSize, Context, Graphics, Transformed};
+use nannou::Draw;
 
 use derive_macros::*;
 use derive_macros_helpers::*;
@@ -237,36 +237,25 @@ impl TileType {
         }
     }
 
-    pub fn draw_tile<G: Graphics>(
+    pub fn draw_tile(
         &self,
-        context: Context,
-        gl: &mut G,
-        texture_map: &TextureMap<G, TileTextureIndex>,
+        draw: &Draw,
+        texture_map: &TextureMap<TileTextureIndex>,
         coord: &ObjectCoordinate,
         state: &GameState,
-    ) where
-        G::Texture: ImageSize,
+    )
     {
         if let GameState::GameState { position, .. } = state {
-            use super::color::*;
 
             let rect = [0.0, 0.0, TILE_SIZE, TILE_SIZE];
 
-            let adjusted = context.trans(
-                (coord.x as f64) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0,
-                (coord.y as f64) * TILE_SIZE - position.y * 64.0 - TILE_SIZE / 2.0,
-            );
+            let x = (coord.x as f32) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0;
+            let y = (coord.y as f32) * TILE_SIZE - position.y * 64.0 - TILE_SIZE / 2.0;
 
             if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
-                let transform = adjusted
-                    .scale(
-                        TILE_SIZE / f64::from(texture.get_width()),
-                        TILE_SIZE / f64::from(texture.get_height()),
-                    )
-                    .transform;
-                image(texture, transform, gl)
+                draw.texture(texture).x_y(x, y).w_h(TILE_SIZE, TILE_SIZE);
             } else {
-                rectangle(D_RED, rect, adjusted.transform, gl)
+                draw.rect().x_y(x, y).w_h(TILE_SIZE, TILE_SIZE).color(nannou::color::named::RED);
             }
         }
     }

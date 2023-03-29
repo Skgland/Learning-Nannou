@@ -1,9 +1,6 @@
-use conrod_core::input::RenderArgs;
 pub use level::*;
-use piston_window::{rectangle, Context, Graphics, Key, Transformed};
-use std::cell::RefCell;
-use std::collections::BTreeSet;
 use std::rc::Rc;
+use nannou::prelude::*;
 
 use learning_conrod_core::gui::TextureMap;
 use log::trace;
@@ -14,8 +11,8 @@ pub mod test_level;
 
 #[derive(Clone, Debug)]
 pub struct PlayerCoordinate {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -25,11 +22,9 @@ pub enum GameState {
     },
     GameState {
         //current angle of the rotating square
-        rotation: f64,
+        rotation: f32,
 
         show_hud: bool,
-
-        keys_down: Rc<RefCell<BTreeSet<Key>>>,
 
         //x and y offset of the rotating square
         position: PlayerCoordinate,
@@ -62,7 +57,6 @@ impl GameState {
             // Rotation for the square.
             rotation: 0.0,
             show_hud: true,
-            keys_down: Rc::new(RefCell::new(BTreeSet::new())),
             position: PlayerCoordinate { x: 0.0, y: 0.0 },
             old_position: ObjectCoordinate { x: 0, y: 0 },
 
@@ -94,45 +88,42 @@ impl GameState {
         }
     }
 
-    pub fn draw_game<G: Graphics>(
+    pub fn draw_game(
         &self,
-        args: &RenderArgs,
-        context: Context,
-        gl: &mut G,
-        texture_map: &TextureMap<G, TileTextureIndex>,
+        app: &App,
+        frame: &Frame,
+        texture_map: &TextureMap<TileTextureIndex>,
     ) {
+        let size = frame.rect();
         if let GameState::GameState { level_state, .. } = self {
-            let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
+            let (x, y) = (size.w() / 2.0, size.h() / 2.0);
 
-            let c = context.trans(x, y);
+            let draw = app.draw().translate(Vec3::new(x,y,0.0));
 
             for (coord, tile) in &level_state.tile_map {
-                tile.draw_tile(c, gl, texture_map, coord, self);
+                tile.draw_tile(&draw, texture_map, coord, self);
             }
 
             // Draw a box rotating around the middle of the screen.
 
-            self.draw_player(c, gl, texture_map);
+            self.draw_player(&draw,  texture_map);
         }
     }
 
-    pub fn draw_player<G: Graphics>(
+    pub fn draw_player(
         &self,
-        context: Context,
-        gl: &mut G,
-        _texture_map: &TextureMap<G, TileTextureIndex>,
+        draw: &Draw,
+        _texture_map: &TextureMap<TileTextureIndex>,
     ) {
         if let GameState::GameState { rotation, .. } = self {
-            let transform = context
-                .rot_rad(*rotation)
-                .trans(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0)
-                .transform;
-            rectangle(PLAYER_COLOR, PLAYER_SQUARE, transform, gl);
+            draw.rect()
+                .rotate(*rotation)
+                .x_y(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0)
+                .w_h(PLAYER_SIZE, PLAYER_SIZE).color(nannou::color::named::RED);
         }
     }
 }
 
-pub const TILE_SIZE: f64 = 64.0;
-pub const PLAYER_SIZE: f64 = 45.0;
-const PLAYER_SQUARE: piston_window::types::Rectangle = [0.0, 0.0, PLAYER_SIZE, PLAYER_SIZE];
+pub const TILE_SIZE: f32 = 64.0;
+pub const PLAYER_SIZE: f32 = 45.0;
 const PLAYER_COLOR: color::Color = color::RED;
