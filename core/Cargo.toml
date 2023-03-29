@@ -6,15 +6,12 @@ edition = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-conrod_core = { workspace = true }
-conrod_piston = { workspace = true }
 derive_macros_helpers = { workspace = true }
 find_folder = { workspace = true }
-glutin = { workspace = true }
 log = { workspace = true }
-piston_window = { workspace = true }
-piston2d-opengl_graphics = { workspace = true }
 ron = { workspace = true }
 
+nannou = {workspace = true }
+nannou_egui = {workspace = true }
 
 [lib]

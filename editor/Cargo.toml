@@ -7,10 +7,10 @@ edition = { workspace = true }
 [lib]
 
 [dependencies]
-conrod_core = { workspace = true }
 derive_macros = { workspace = true }
 derive_macros_helpers = { workspace = true }
 learning_conrod_core = { workspace = true }
 learning_conrod_game = { workspace = true }
-piston_window = { workspace = true }
-piston2d-opengl_graphics = { workspace = true }
+
+nannou = {workspace = true }
+nannou_egui = {workspace = true }

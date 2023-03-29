@@ -1,47 +1,26 @@
 use crate::{
     app::{Action, UpdateAction},
     game::GameState,
-    game::LevelTemplate,
+    game::{LevelTemplate, TileTextureIndex},
     gui::MenuState::InGame,
 };
-use conrod_core::{
-    position::Positionable, position::Sizeable, widget, widget::Widget, widget_ids, Labelable,
-    UiCell,
-};
-use piston_window::{clear, Context, Events, Input, Key, PistonWindow, RenderArgs, UpdateArgs};
+use nannou::prelude::*;
+use nannou_egui::{Egui, egui::{Ui, Key}};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use crate::game::TileTextureIndex;
-use learning_conrod_core::gui::TextureMap;
 use learning_conrod_core::{
     get_asset_path,
-    gui::{Application, RenderContext},
+    gui::{Application, TextureMap},
 };
 use log::trace;
-use opengl_graphics::{GlGraphics, Texture};
 
-// Generate a unique `WidgetId` for each widget.
-widget_ids! {
-    pub struct GameIds {
-        main_canvas,
-        menu_title,
-        level_buttons[],
-        level_selection_button,
-        editor_button,
-        contiue_button,
-        options_button,
-        back_button,
-        quit_button,
-    }
-}
 
 #[derive(Debug)]
 pub enum MenuState {
-    PauseMenu(GameState),
-    InGame(GameState),
+    InGame(GameState, bool),
     LevelSelect(LevelSelectState),
 }
 
@@ -51,9 +30,9 @@ pub struct LevelSelectState(Vec<Rc<LevelTemplate>>);
 pub trait Menu: Debug {
     fn menu_name(&self) -> Cow<'static, str>;
 
-    fn handle_input(&self, event: piston_window::Input);
+    fn view_menu(&self, ui: &mut Ui);
 
-    fn handle_esc(&mut self, window: &mut PistonWindow) -> UpdateAction;
+    fn handle_esc(&mut self, window: WindowId) -> UpdateAction;
 }
 
 impl MenuState {
@@ -68,103 +47,70 @@ impl MenuState {
     }
 }
 
-impl<'a> Application<'a> for MenuState {
-    type RR = ();
-    type IR = ();
-    type UR = ();
-    type GUI = ();
-    type RP = TextureMap<GlGraphics, TileTextureIndex>;
-    type UP = (UiCell<'a>, &'a mut GameIds);
+impl MenuState {
 
-    fn render(
+    pub(crate) fn view(
         &self,
-        _gui: &Self::GUI,
-        texture_map: &Self::RP,
-        gl: &mut GlGraphics,
-        context: Context,
-        _render_context: &mut RenderContext<'_, Texture>,
-        render_args: &RenderArgs,
-    ) -> Self::RR {
-        match self {
-            MenuState::InGame(game_state) => {
-                clear(crate::game::color::D_RED, gl);
-                game_state.draw_game(render_args, context, gl, texture_map);
-            }
-            _ => {
-                clear(crate::game::color::BLUE, gl);
-            }
+        app: &nannou::App,
+        frame: &nannou::Frame,
+        egui: &Egui,
+        texture_map: &TextureMap<TileTextureIndex>
+    ){
+    match self {
+        MenuState::InGame(game_state,false) => {
+            let draw = app.draw();
+                draw.background().color(nannou::color::named::RED);
+            draw.to_frame(app, frame).unwrap();
+            game_state.draw_game(app, frame, texture_map);
         }
-    }
+        _ => {
+            let draw = app.draw();
+                draw.background().color(nannou::color::named::BLUE);
+            draw.to_frame(app, frame).unwrap();
+        }
+    }}
 
-    fn input(
+    pub(crate) fn update(
         &mut self,
-        _gui: &mut Self::GUI,
-        _event: Input,
-        _event_loop: &mut Events,
-        _window: &mut PistonWindow,
-    ) -> Self::IR {
-        unimplemented!()
-    }
-
-    fn update(
-        &mut self,
-        _gui: &mut Self::GUI,
-        (ui, ids): &mut Self::UP,
-        update_args: UpdateArgs,
-        _window: &mut PistonWindow,
-    ) -> Self::UR {
+        app: &App,
+        update: Update,
+        main_window: WindowId,
+        egui: &mut Ui
+    ) {
         match self {
-            MenuState::PauseMenu(_state) => {
-                widget::Text::new("Pause Menu")
-                    .font_size(30)
-                    .mid_top_of(ids.main_canvas)
-                    .set(ids.menu_title, ui);
-                widget::Button::new()
-                    .label("Continue")
-                    .label_font_size(30)
-                    .middle_of(ids.main_canvas)
-                    .padded_kid_area_wh_of(ids.main_canvas, ui.win_h / 4.0)
-                    .set(ids.contiue_button, ui);
+            MenuState::InGame(state, paused@true) => {
+                egui.label("Pause Menu");
+                if egui.button("Continue").clicked() {
+                    *paused = false;
+                }
             }
             MenuState::LevelSelect(level_list) => {
-                widget::Text::new("Level Selection")
-                    .font_size(30)
-                    .mid_top_of(ids.main_canvas)
-                    .set(ids.menu_title, ui);
+                egui.label("Level Selection");
 
-                ids.level_buttons
-                    .resize(level_list.0.len(), &mut ui.widget_id_generator());
-
-                for (button_id, level) in ids.level_buttons.iter().zip(level_list.0.iter()) {
-                    let clicked = widget::Button::new().label(&level.name).set(*button_id, ui);
-                    if clicked.was_clicked() {
+                for level in level_list.0.iter() {
+                    if egui.button(&level.name).clicked() {
                         let state = GameState::new(level.clone());
-                        *self = InGame(state);
+                        *self = InGame(state, true);
                         break;
                     }
                 }
             }
-            MenuState::InGame(state) => {
+            MenuState::InGame(state, paused@false) => {
                 match state {
-                    GameState::Won { .. } => widget::Text::new("Won")
-                        .font_size(30)
-                        .mid_top_of(ids.main_canvas)
-                        .set(ids.menu_title, ui),
+                    GameState::Won { .. } => {
+                        egui.label("Won");
+                    }
                     GameState::GameState {
                         show_hud,
                         rotation,
-                        keys_down,
                         ..
                     } => {
                         if *show_hud {
-                            widget::Text::new("HUD")
-                                .font_size(30)
-                                .mid_top_of(ids.main_canvas)
-                                .set(ids.menu_title, ui)
+                            egui.label("HUD");
                         }
-
                         // Rotate 2 radians per second.
-                        *rotation += 8.0 * update_args.dt;
+                        let delta: f32 = todo!();
+                        *rotation += 8.0 * delta;
 
                         let mut key_map: BTreeMap<Key, Action> = BTreeMap::new();
 
@@ -173,11 +119,10 @@ impl<'a> Application<'a> for MenuState {
                         key_map.insert(Key::S, Action::Down);
                         key_map.insert(Key::D, Action::Right);
 
-                        let down_clone = keys_down.clone();
 
                         key_map
                             .iter()
-                            .filter(|(&k, _)| down_clone.borrow().contains(&k))
+                            .filter(|(&k, _)|  egui.input().key_down(k))
                             .for_each(|(_, action)| action.perform(state));
                     }
                 }
@@ -187,44 +132,29 @@ impl<'a> Application<'a> for MenuState {
     }
 }
 
+
 impl Menu for MenuState {
     fn menu_name(&self) -> Cow<'static, str> {
         match self {
-            MenuState::PauseMenu(_) => Cow::Borrowed("Pause Menu"),
+            MenuState::InGame(_, true) => Cow::Borrowed("Pause Menu"),
             MenuState::LevelSelect(_) => Cow::Borrowed("Level Selection"),
-            MenuState::InGame(_) => Cow::Borrowed(""),
+            MenuState::InGame(_, false) => Cow::Borrowed(""),
         }
     }
 
-    fn handle_input(&self, event: piston_window::Input) {
-        use piston_window::{Button, ButtonArgs, ButtonState};
-        if let MenuState::InGame(GameState::GameState { keys_down, .. }) = self {
-            if let piston_window::Input::Button(ButtonArgs {
-                button: Button::Keyboard(key),
-                state: button_state,
-                ..
-            }) = event
-            {
-                match button_state {
-                    ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
-                    ButtonState::Release => {
-                        keys_down.try_borrow_mut().unwrap().remove(&key)
-                    }
-                };
-                trace!("{:?}", key);
-            };
-        }
-    }
-
-    fn handle_esc(&mut self, _window: &mut PistonWindow) -> UpdateAction {
+    fn handle_esc(&mut self, _window: WindowId) -> UpdateAction {
         match self {
-            MenuState::PauseMenu(_state) => *self = Self::open_level_selection(),
+            MenuState::InGame(_state, true) => *self = Self::open_level_selection(),
             MenuState::LevelSelect(_) => {
                 return UpdateAction::Close;
             }
-            InGame(state) => *self = MenuState::PauseMenu(state.clone()),
+            InGame(state, paused@false) => *paused = true,
         }
 
         UpdateAction::Nothing
+    }
+
+    fn view_menu(&self, ui: &mut Ui) {
+        todo!()
     }
 }
