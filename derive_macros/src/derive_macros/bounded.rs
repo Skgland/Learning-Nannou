@@ -182,7 +182,7 @@ mod impl_struct {
 
 fn has_skip_attribute(variant: &Variant) -> bool {
     variant.attrs.iter().any(|attr| {
-        attr.path
+        attr.path()
             .segments
             .first()
             .map(|pair| pair.ident == "skip")

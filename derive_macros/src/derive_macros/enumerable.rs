@@ -167,7 +167,7 @@ fn iter_fields_named(variant_ident: &Ident, fields: &[&Ident], last: TokenStream
 
 fn has_skip_attribute(variant: &Variant) -> bool {
     variant.attrs.iter().any(|attr| {
-        attr.path
+        attr.path()
             .segments
             .first()
             .map(|pair| pair.ident == "skip")
