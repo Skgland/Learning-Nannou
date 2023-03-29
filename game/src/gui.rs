@@ -76,13 +76,13 @@ impl<'a> Application<'a> for MenuState {
     type RP = TextureMap<GlGraphics, TileTextureIndex>;
     type UP = (UiCell<'a>, &'a mut GameIds);
 
-    fn render<'font>(
+    fn render(
         &self,
         _gui: &Self::GUI,
         texture_map: &Self::RP,
         gl: &mut GlGraphics,
         context: Context,
-        _render_context: &mut RenderContext<'font, Texture>,
+        _render_context: &mut RenderContext<'_, Texture>,
         render_args: &RenderArgs,
     ) -> Self::RR {
         match self {
@@ -168,10 +168,10 @@ impl<'a> Application<'a> for MenuState {
 
                         let mut key_map: BTreeMap<Key, Action> = BTreeMap::new();
 
-                        key_map.insert(Key::W, Action::UP);
-                        key_map.insert(Key::A, Action::LEFT);
-                        key_map.insert(Key::S, Action::DOWN);
-                        key_map.insert(Key::D, Action::RIGHT);
+                        key_map.insert(Key::W, Action::Up);
+                        key_map.insert(Key::A, Action::Left);
+                        key_map.insert(Key::S, Action::Down);
+                        key_map.insert(Key::D, Action::Right);
 
                         let down_clone = keys_down.clone();
 
@@ -198,26 +198,21 @@ impl Menu for MenuState {
 
     fn handle_input(&self, event: piston_window::Input) {
         use piston_window::{Button, ButtonArgs, ButtonState};
-        match self {
-            MenuState::InGame(state) => {
-                if let GameState::GameState { keys_down, .. } = state {
-                    if let piston_window::Input::Button(ButtonArgs {
-                        button: Button::Keyboard(key),
-                        state: button_state,
-                        ..
-                    }) = event
-                    {
-                        match button_state {
-                            ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
-                            ButtonState::Release => {
-                                keys_down.try_borrow_mut().unwrap().remove(&key)
-                            }
-                        };
-                        trace!("{:?}", key);
-                    };
-                }
-            }
-            _ => {}
+        if let MenuState::InGame(GameState::GameState { keys_down, .. }) = self {
+            if let piston_window::Input::Button(ButtonArgs {
+                button: Button::Keyboard(key),
+                state: button_state,
+                ..
+            }) = event
+            {
+                match button_state {
+                    ButtonState::Press => keys_down.try_borrow_mut().unwrap().insert(key),
+                    ButtonState::Release => {
+                        keys_down.try_borrow_mut().unwrap().remove(&key)
+                    }
+                };
+                trace!("{:?}", key);
+            };
         }
     }
 

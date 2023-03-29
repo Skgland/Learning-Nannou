@@ -65,13 +65,13 @@ impl Application<'_> for App {
     type RP = ();
     type UP = ();
 
-    fn render<'font>(
+    fn render(
         &self,
         _gui: &Self::GUI,
         _rp: &Self::RP,
         gl: &mut GlGraphics,
         context: Context,
-        render_context: &mut RenderContext<'font>,
+        render_context: &mut RenderContext<'_>,
         render_args: &RenderArgs,
     ) -> Self::RR {
         match self {

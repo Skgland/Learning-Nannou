@@ -17,14 +17,14 @@ pub struct GUI<Ids> {
     pub fullscreen: bool,
 }
 
-pub fn cache_queued_glyphs<'a>(
-    text_vertex_data: &'a mut Vec<u8>,
+pub fn cache_queued_glyphs(
+    text_vertex_data: &'_ mut Vec<u8>,
 ) -> impl FnMut(
     &mut GlGraphics,
     &mut opengl_graphics::Texture,
     conrod_core::text::rt::Rect<u32>,
     &[u8],
-) + 'a {
+) + '_ {
     use piston_window::texture::UpdateTexture;
     move |_graphics: &mut GlGraphics,
           cache: &mut opengl_graphics::Texture,
