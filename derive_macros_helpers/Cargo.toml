@@ -1,8 +1,7 @@
 [package]
 name = "derive_macros_helpers"
-version = "0.1.0"
-authors = ["BB20101997 <bennet-blessmann@t-online.de>"]
-edition = "2018"
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
-derive_macros = {path = "../derive_macros"}
+derive_macros = { workspace = true }

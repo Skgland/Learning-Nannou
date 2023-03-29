@@ -8,4 +8,27 @@ members =   [ "core"
             ]
 
 
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
 
+[workspace.dependencies]
+
+conrod_core = "0.76.1"
+conrod_piston = "0.76.1"
+derive_macros = {path = "./derive_macros"}
+derive_macros_helpers = {path = "./derive_macros_helpers"}
+env_logger = "0.9.0"
+find_folder = "0.3.0"
+glutin = "0.26.0"
+learning_conrod_core = {path="./core"}
+learning_conrod_editor = {path="./editor"}
+learning_conrod_game = {path="./game"}
+log = "0.4.17"
+piston_window = { version = "0.120.0" , features = ["glutin"]}
+piston2d-opengl_graphics = "0.78.0"
+proc-macro2 = "1.0.43"
+quote = "1.0.21"
+ron= "0.8.0"
+serde = { version = "1.0.143", features = ["derive"] }
+syn = "1.0.99"
