@@ -1,21 +1,20 @@
 [package]
 name = "learning_conrod_core"
-version = "0.1.0"
-authors = ["BB20101997 <bb-github@t-online.de>"]
-edition = "2018"
+version = { workspace = true }
+edition = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-derive_macros_helpers = {path = "../derive_macros_helpers"}
-conrod_core = "0.76.1"
-conrod_piston = "0.76.1"
-piston_window = { version = "0.120.0" , features = ["glutin"]}
-piston2d-opengl_graphics = "0.78.0"
-glutin = "0.26.0"
-ron= "0.8.0"
-find_folder = "0.3.0"
-log = "0.4.17"
+conrod_core = { workspace = true }
+conrod_piston = { workspace = true }
+derive_macros_helpers = { workspace = true }
+find_folder = { workspace = true }
+glutin = { workspace = true }
+log = { workspace = true }
+piston_window = { workspace = true }
+piston2d-opengl_graphics = { workspace = true }
+ron = { workspace = true }
 
 
 [lib]
