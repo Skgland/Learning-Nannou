@@ -204,7 +204,7 @@ impl TileType {
         }
     }
 
-    pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState) -> ()>> {
+    pub fn step_on(&mut self) -> Option<Box<dyn Fn(&mut GameState)>> {
         match self {
             TileType::Goal { active: true } => {
                 trace!("Goal reached!");
@@ -478,13 +478,11 @@ pub mod loading {
 
         let dir = path.read_dir()?;
 
-        for entry in dir {
-            if let Ok(entry) = entry {
-                if let Ok(f_type) = entry.file_type() {
-                    if f_type.is_file() {
-                        if let Ok(level) = load_level(entry.path().as_path()) {
-                            levels.push(level);
-                        }
+        for entry in dir.flatten() {
+            if let Ok(f_type) = entry.file_type() {
+                if f_type.is_file() {
+                    if let Ok(level) = load_level(entry.path().as_path()) {
+                        levels.push(level);
                     }
                 }
             }

@@ -73,13 +73,13 @@ impl Application<'_> for EditorState {
     type RP = ();
     type UP = ();
 
-    fn render<'font>(
+    fn render(
         &self,
         gui: &Self::GUI,
         render_param: &Self::RP,
         gl: &mut GlGraphics,
         context: Context,
-        render_context: &mut RenderContext<'font, Texture>,
+        render_context: &mut RenderContext<'_, Texture>,
         render_args: &RenderArgs,
     ) -> Self::RR {
         match self {
@@ -130,13 +130,13 @@ impl Application<'_> for EditorApp {
     type RP = ();
     type UP = ();
 
-    fn render<'font>(
+    fn render(
         &self,
         gui: &Self::GUI,
         _rp: &Self::RP,
         gl: &mut GlGraphics,
         context: Context,
-        render_context: &mut RenderContext<'font>,
+        render_context: &mut RenderContext<'_>,
         render_args: &RenderArgs,
     ) -> Self::RR {
         self.state

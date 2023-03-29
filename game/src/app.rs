@@ -14,20 +14,20 @@ pub struct GameApp {
 
 #[derive(Bounded)]
 pub enum Action {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 impl Action {
     pub fn perform(&self, state: &mut GameState) {
         if let GameState::GameState { position, .. } = state {
             match self {
-                Action::UP => position.y -= 0.5 / 64.0,
-                Action::DOWN => position.y += 0.5 / 64.0,
-                Action::LEFT => position.x -= 0.5 / 64.0,
-                Action::RIGHT => position.x += 0.5 / 64.0,
+                Action::Up => position.y -= 0.5 / 64.0,
+                Action::Down => position.y += 0.5 / 64.0,
+                Action::Left => position.x -= 0.5 / 64.0,
+                Action::Right => position.x += 0.5 / 64.0,
             }
         }
     }
