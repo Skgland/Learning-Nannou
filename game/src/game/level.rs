@@ -247,10 +247,8 @@ impl TileType {
     {
         if let GameState::GameState { position, .. } = state {
 
-            let rect = [0.0, 0.0, TILE_SIZE, TILE_SIZE];
-
             let x = (coord.x as f32) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0;
-            let y = (coord.y as f32) * TILE_SIZE - position.y * 64.0 - TILE_SIZE / 2.0;
+            let y = (-coord.y as f32) * TILE_SIZE + position.y * 64.0 - TILE_SIZE / 2.0;
 
             if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
                 draw.texture(texture).x_y(x, y).w_h(TILE_SIZE, TILE_SIZE);
@@ -457,6 +455,7 @@ pub mod loading {
     }
 
     pub fn load_levels(asset_path: &std::path::Path) -> Result<Vec<LevelTemplate>, LoadingError> {
+        log::info!("Loading Levels!");
         let path = asset_path.join("levels");
         let mut levels = vec![];
 
@@ -476,10 +475,12 @@ pub mod loading {
                 }
             }
         }
+        log::info!("Loaded {} levels!", levels.len());
         Ok(levels)
     }
 
     fn load_level(path: &std::path::Path) -> Result<LevelTemplate, LoadingError> {
+        log::info!("Loading level at '{}'!", path.display());
         let mut content = vec![];
 
         use serde::Deserialize;

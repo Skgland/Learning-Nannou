@@ -24,12 +24,12 @@ fn startup(app: &App) {
     }
 }
 
-pub fn create_game_app(app: &App, main_window: WindowId) -> Result<GameApp, String> {
+pub fn create_game_app(app: &App) -> Result<GameApp, String> {
     startup(app);
 
     let texture_map = load_textures::<TileTextureIndex>(app);
 
     let init_menu = MenuState::open_level_selection();
 
-    Ok(GameApp::new(app, main_window, texture_map, init_menu))
+    Ok(GameApp::new( texture_map, init_menu))
 }
