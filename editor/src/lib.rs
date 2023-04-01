@@ -1,7 +1,6 @@
-
 use derive_macros::{Bounded, Enumerable};
 use derive_macros_helpers::{Bounded, Enumerable};
-use learning_conrod_core::gui::{TextureMap, Application, load_textures};
+use learning_conrod_core::gui::{load_textures, Application, TextureMap};
 use learning_conrod_game::game::{LevelTemplate, TileTextureIndex};
 use learning_conrod_game::GameApp;
 use nannou::prelude::*;
@@ -48,12 +47,7 @@ pub struct Editor {
 }
 
 impl EditorState {
-
-    fn view(
-        &self,
-        app: &App,
-        frame: &nannou::Frame,egui: &Egui) {
-
+    fn view(&self, app: &App, frame: &nannou::Frame, egui: &Egui) {
         match self {
             EditorState::Editor(_, None) => {
                 let draw = app.draw();
@@ -69,13 +63,11 @@ impl EditorState {
                 let draw = app.draw();
                 draw.background().color(nannou::color::named::BLUE);
                 draw.to_frame(app, frame).unwrap();
-            },
+            }
         }
         egui.draw_to_frame(frame).unwrap();
     }
-
 }
-
 
 impl EditorApp {
     fn new(texture_map: TextureMap<EditorTextureIndex>) -> EditorApp {
@@ -101,14 +93,12 @@ impl Application<'_> for EditorApp {
         _update: Update,
         _egui: &mut Egui,
         _main_window: WindowId,
-    ) -> Self::UpdateResult  {
+    ) -> Self::UpdateResult {
         // TODO
-
     }
 }
 
-pub fn create_editor_app(app:&App) -> Result<EditorApp, String> {
-
+pub fn create_editor_app(app: &App) -> Result<EditorApp, String> {
     let texture_map = load_textures::<EditorTextureIndex>(app);
 
     Ok(EditorApp::new(texture_map))

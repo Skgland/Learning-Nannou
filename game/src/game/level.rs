@@ -243,17 +243,18 @@ impl TileType {
         texture_map: &TextureMap<TileTextureIndex>,
         coord: &ObjectCoordinate,
         state: &GameState,
-    )
-    {
+    ) {
         if let GameState::GameState { position, .. } = state {
-
             let x = (coord.x as f32) * TILE_SIZE - position.x * 64.0 - TILE_SIZE / 2.0;
             let y = (-coord.y as f32) * TILE_SIZE + position.y * 64.0 - TILE_SIZE / 2.0;
 
             if let Some(texture) = texture_map.get(&self.tile_texture_id()) {
                 draw.texture(texture).x_y(x, y).w_h(TILE_SIZE, TILE_SIZE);
             } else {
-                draw.rect().x_y(x, y).w_h(TILE_SIZE, TILE_SIZE).color(nannou::color::named::RED);
+                draw.rect()
+                    .x_y(x, y)
+                    .w_h(TILE_SIZE, TILE_SIZE)
+                    .color(nannou::color::named::RED);
             }
         }
     }

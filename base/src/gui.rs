@@ -37,16 +37,13 @@ impl AppState {
             }
             AppResult::SwitchToEditor => {
                 //TODO handle create_app Err better
-                let editor =
-                    create_editor_app(app).expect("TODO handle this better");
+                let editor = create_editor_app(app).expect("TODO handle this better");
                 self.selection = Some(AppSelection::Editor(editor))
             }
             AppResult::SwitchToSelection => {
                 self.selection = None;
             }
-            AppResult::Exit => {
-                app.quit()
-            }
+            AppResult::Exit => app.quit(),
         }
     }
 

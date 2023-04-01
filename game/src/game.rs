@@ -1,7 +1,7 @@
 pub use level::*;
+use nannou::prelude::*;
 use nannou_egui::Egui;
 use std::rc::Rc;
-use nannou::prelude::*;
 
 use learning_conrod_core::gui::TextureMap;
 use log::trace;
@@ -97,8 +97,7 @@ impl GameState {
         texture_map: &TextureMap<TileTextureIndex>,
     ) {
         match self {
-            GameState::GameState { level_state,.. } => {
-
+            GameState::GameState { level_state, .. } => {
                 let draw = app.draw();
 
                 for (coord, tile) in &level_state.tile_map {
@@ -107,26 +106,23 @@ impl GameState {
 
                 // Draw a box rotating around the middle of the screen.
 
-                self.draw_player(&draw,  texture_map);
+                self.draw_player(&draw, texture_map);
 
                 draw.to_frame(app, frame).unwrap();
             }
-            GameState::Won { level_template:_ } => {
+            GameState::Won { level_template: _ } => {
                 egui.draw_to_frame(frame).unwrap();
-            },
+            }
         }
     }
 
-    pub fn draw_player(
-        &self,
-        draw: &Draw,
-        _texture_map: &TextureMap<TileTextureIndex>,
-    ) {
+    pub fn draw_player(&self, draw: &Draw, _texture_map: &TextureMap<TileTextureIndex>) {
         if let GameState::GameState { rotation, .. } = self {
             draw.rect()
                 .rotate(*rotation)
                 .x_y(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0)
-                .w_h(PLAYER_SIZE, PLAYER_SIZE).color(nannou::color::named::RED);
+                .w_h(PLAYER_SIZE, PLAYER_SIZE)
+                .color(nannou::color::named::RED);
         }
     }
 }

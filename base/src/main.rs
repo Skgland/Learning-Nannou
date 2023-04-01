@@ -9,26 +9,27 @@ use nannou::prelude::*;
 
 mod gui;
 
-use gui::{AppState};
+use gui::AppState;
 use nannou_egui::Egui;
 
-
-impl AppState{
+impl AppState {
     fn setup(app: &App) -> Self {
         app.set_fullscreen_on_shortcut(true);
         app.set_exit_on_escape(false);
 
-        let window_id = app.new_window()
+        let window_id = app
+            .new_window()
             .view(|app, model: &Self, frame| model.view(app, &frame))
             .raw_event(|app, model: &mut Self, event| model.raw_window_event(app, event))
-            .build().unwrap();
+            .build()
+            .unwrap();
 
         let egui = Egui::from_window(&app.window(window_id).unwrap());
 
         AppState {
             main_window: window_id,
             selection: None,
-            egui
+            egui,
         }
     }
 }
@@ -44,8 +45,9 @@ fn main() -> Result<(), MainError> {
         .parse_default_env()
         .init();
 
-
-    nannou::app(AppState::setup).update(|app, model, update| model.update(app, update)).run();
+    nannou::app(AppState::setup)
+        .update(|app, model, update| model.update(app, update))
+        .run();
 
     Ok(())
 }
