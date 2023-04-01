@@ -123,21 +123,23 @@ impl MenuState {
                 UpdateAction::Nothing
             }
             MenuState::LevelSelect(level_list) => {
-                let result = egui::CentralPanel::default().show(ctx, |ui| {
+                let result = egui::CentralPanel::default()
+                    .show(ctx, |ui| {
+                        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                            ui.label("Level Selection");
 
-                    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                        ui.label("Level Selection");
-
-                    ui.group(|ui| {
-                            for level in level_list.0.iter() {
-                            if ui.button(&level.name).clicked() {
-                                return Some(level.clone());
-                            }
-                        }
-                        None
-                    }).inner
+                            ui.group(|ui| {
+                                for level in level_list.0.iter() {
+                                    if ui.button(&level.name).clicked() {
+                                        return Some(level.clone());
+                                    }
+                                }
+                                None
+                            })
+                            .inner
+                        })
                     })
-                }).inner;
+                    .inner;
 
                 if let Some(level) = result.inner {
                     *self = MenuState::InGame {
