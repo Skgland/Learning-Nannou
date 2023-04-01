@@ -30,9 +30,8 @@ impl ToString for EditorTextureIndex {
 }
 
 pub struct EditorApp {
-    texture_map: TextureMap<EditorTextureIndex>,
+    _texture_map: TextureMap<EditorTextureIndex>,
     state: EditorState,
-    egui: Egui
 }
 
 pub enum EditorState {
@@ -43,9 +42,9 @@ pub enum EditorState {
 }
 
 pub struct Editor {
-    level: LevelTemplate,
-    saved: bool,
-    file: Option<PathBuf>,
+    _level: LevelTemplate,
+    _saved: bool,
+    _file: Option<PathBuf>,
 }
 
 impl EditorState {
@@ -59,32 +58,29 @@ impl EditorState {
             EditorState::Editor(_, None) => {
                 let draw = app.draw();
                 draw.background().color(nannou::color::named::RED);
-                draw.to_frame(app, &frame).unwrap();
+                draw.to_frame(app, frame).unwrap();
 
                 //TOD draw editor content
             }
-            EditorState::Editor(editor, Some(game)) => {
-                game.view(app, frame);
+            EditorState::Editor(_editor, Some(game)) => {
+                game.view(app, frame, egui);
             }
             _ => {
                 let draw = app.draw();
                 draw.background().color(nannou::color::named::BLUE);
-                draw.to_frame(app, &frame).unwrap();
+                draw.to_frame(app, frame).unwrap();
             },
         }
-        egui.draw_to_frame(&frame).unwrap();
+        egui.draw_to_frame(frame).unwrap();
     }
 
 }
 
 
 impl EditorApp {
-    fn new(app: &App, window_id: WindowId, texture_map: TextureMap<EditorTextureIndex>) -> EditorApp {
-        let window = app.window(window_id).unwrap();
-        let egui = Egui::from_window(&window);
+    fn new(texture_map: TextureMap<EditorTextureIndex>) -> EditorApp {
         EditorApp {
-            egui,
-            texture_map,
+            _texture_map: texture_map,
             state: EditorState::MainMenu,
         }
     }
@@ -95,14 +91,25 @@ impl Application<'_> for EditorApp {
     type RawEventResult = ();
     type UpdateResult = ();
 
-    fn view(&self, app: &App, frame: &Frame) {
-        self.state.view(app, frame, &self.egui);
+    fn view(&self, app: &App, frame: &Frame, egui: &Egui) {
+        self.state.view(app, frame, egui);
+    }
+
+    fn update(
+        &mut self,
+        _app: &App,
+        _update: Update,
+        _egui: &mut Egui,
+        _main_window: WindowId,
+    ) -> Self::UpdateResult  {
+        // TODO
+
     }
 }
 
-pub fn create_editor_app(app:&App, main_window: WindowId) -> Result<EditorApp, String> {
+pub fn create_editor_app(app:&App) -> Result<EditorApp, String> {
 
     let texture_map = load_textures::<EditorTextureIndex>(app);
 
-    Ok(EditorApp::new(app, main_window, texture_map))
+    Ok(EditorApp::new(texture_map))
 }

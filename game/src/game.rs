@@ -1,4 +1,5 @@
 pub use level::*;
+use nannou_egui::Egui;
 use std::rc::Rc;
 use nannou::prelude::*;
 
@@ -92,21 +93,27 @@ impl GameState {
         &self,
         app: &App,
         frame: &Frame,
+        egui: &Egui,
         texture_map: &TextureMap<TileTextureIndex>,
     ) {
-        let size = frame.rect();
-        if let GameState::GameState { level_state, .. } = self {
-            let (x, y) = (size.w() / 2.0, size.h() / 2.0);
+        match self {
+            GameState::GameState { level_state,.. } => {
 
-            let draw = app.draw().translate(Vec3::new(x,y,0.0));
+                let draw = app.draw();
 
-            for (coord, tile) in &level_state.tile_map {
-                tile.draw_tile(&draw, texture_map, coord, self);
+                for (coord, tile) in &level_state.tile_map {
+                    tile.draw_tile(&draw, texture_map, coord, self);
+                }
+
+                // Draw a box rotating around the middle of the screen.
+
+                self.draw_player(&draw,  texture_map);
+
+                draw.to_frame(app, frame).unwrap();
             }
-
-            // Draw a box rotating around the middle of the screen.
-
-            self.draw_player(&draw,  texture_map);
+            GameState::Won { level_template:_ } => {
+                egui.draw_to_frame(frame).unwrap();
+            },
         }
     }
 
@@ -126,4 +133,3 @@ impl GameState {
 
 pub const TILE_SIZE: f32 = 64.0;
 pub const PLAYER_SIZE: f32 = 45.0;
-const PLAYER_COLOR: color::Color = color::RED;

@@ -1,6 +1,7 @@
 use derive_macros_helpers::{Bounded, Enumerable};
 use log::error;
 use nannou::prelude::*;
+use nannou_egui::Egui;
 use std::fmt::Debug;
 
 pub trait Application<'a> {
@@ -12,23 +13,16 @@ pub trait Application<'a> {
         &self,
         app: &App,
         frame: &Frame,
-    ) -> Self::ViewResult {
-        todo!()
-    }
-
-
-    fn raw_window_event(&mut self, app: &App, event: &nannou::winit::event::WindowEvent) -> Self::RawEventResult{
-        todo!()
-    }
+        egui: & Egui
+    ) -> Self::ViewResult ;
 
     fn update(
         &mut self,
         app: &App,
         update: Update,
+        egui: &mut Egui,
         main_window: WindowId,
-    ) -> Self::UpdateResult {
-        todo!()
-    }
+    ) -> Self::UpdateResult ;
 }
 
 pub type TextureMap<K> = std::collections::btree_map::BTreeMap<K, wgpu::Texture>;
