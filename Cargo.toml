@@ -23,7 +23,7 @@ find_folder = "0.3.0"
 learning_conrod_core = {path="./core"}
 learning_conrod_editor = {path="./editor"}
 learning_conrod_game = {path="./game"}
-log = "0.4.19"
+log = "0.4.20"
 nannou = "0.18.1"
 nannou_egui = "0.5.0"
 proc-macro2 = "1.0.66"
