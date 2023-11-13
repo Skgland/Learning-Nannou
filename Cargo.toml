@@ -18,7 +18,7 @@ edition = "2021"
 
 derive_macros = {path = "./derive_macros"}
 derive_macros_helpers = {path = "./derive_macros_helpers"}
-env_logger = "0.10.0"
+env_logger = "0.10.1"
 find_folder = "0.3.0"
 learning_conrod_core = {path="./core"}
 learning_conrod_editor = {path="./editor"}
