@@ -26,7 +26,7 @@ learning_conrod_game = {path="./game"}
 log = "0.4.20"
 nannou = "0.18.1"
 nannou_egui = "0.5.0"
-proc-macro2 = "1.0.75"
+proc-macro2 = "1.0.76"
 quote = "1.0.35"
 ron= "0.8.1"
 serde = { version = "1.0.195", features = ["derive"] }
