@@ -30,4 +30,4 @@ proc-macro2 = "1.0.86"
 quote = "1.0.36"
 ron= "0.8.1"
 serde = { version = "1.0.204", features = ["derive"] }
-syn = "2.0.70"
+syn = "2.0.71"
