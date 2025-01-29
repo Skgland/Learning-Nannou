@@ -2,6 +2,7 @@
 name = "learning_conrod_editor"
 version = { workspace = true }
 edition = { workspace = true }
+license = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -12,5 +13,5 @@ derive_macros_helpers = { workspace = true }
 learning_conrod_core = { workspace = true }
 learning_conrod_game = { workspace = true }
 
-nannou = {workspace = true }
-nannou_egui = {workspace = true }
+nannou = { workspace = true }
+nannou_egui = { workspace = true }
