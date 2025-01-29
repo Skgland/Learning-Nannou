@@ -67,11 +67,11 @@ impl AppState {
             None => {
                 let ctx = self.egui.begin_frame();
 
-                if ctx.input().key_pressed(Key::G) {
+                if ctx.input(|state| state.key_pressed(Key::G)) {
                     AppResult::SwitchToGame
-                } else if ctx.input().key_pressed(Key::E) {
+                } else if ctx.input(|state| state.key_pressed(Key::E)) {
                     AppResult::SwitchToEditor
-                } else if ctx.input().key_pressed(Key::Escape) {
+                } else if ctx.input(|state| state.key_pressed(Key::Escape)) {
                     AppResult::Exit
                 } else {
                     egui::Window::new("Learning Conrod")

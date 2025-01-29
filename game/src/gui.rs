@@ -94,7 +94,7 @@ impl MenuState {
         ctx: &mut FrameCtx,
         main_window: WindowId,
     ) -> UpdateAction {
-        if ctx.input().key_pressed(Key::Escape) {
+        if ctx.input(|state| state.key_pressed(Key::Escape)) {
             if let UpdateAction::Close = self.handle_esc(main_window) {
                 return UpdateAction::Close;
             }
@@ -171,7 +171,7 @@ impl MenuState {
                         show_hud, rotation, ..
                     } => {
                         // FIXME should be F1, but egui in the version used be nannou_egui does not have that key
-                        if ctx.input().key_pressed(Key::H) {
+                        if ctx.input(|state| state.key_pressed(Key::H)) {
                             *show_hud = !*show_hud;
                         }
 
@@ -192,10 +192,12 @@ impl MenuState {
                         key_map.insert(Key::S, Action::Down);
                         key_map.insert(Key::D, Action::Right);
 
+ctx.input(|input_state| {
                         key_map
                             .iter()
-                            .filter(|(&k, _)| ctx.input().key_down(k))
+                            .filter(|(&k, _)| input_state.key_down(k))
                             .for_each(|(_, action)| action.perform(state));
+});
 
                         state.handle_input();
 
