@@ -1,7 +1,9 @@
 use crate::{
     app::{Action, UpdateAction},
-    game::GameState,
-    game::{LevelTemplate, TileTextureIndex},
+    game::{
+        color::{IN_GAME_BACKGROUND, MENU_BACKGROUND},
+        GameState, LevelTemplate, TileTextureIndex,
+    },
     gui::MenuState::InGame,
 };
 use nannou::prelude::*;
@@ -73,14 +75,14 @@ impl MenuState {
                 paused: _,
             } => {
                 let draw = app.draw();
-                draw.background().color(nannou::color::named::RED);
+                draw.background().color(IN_GAME_BACKGROUND);
                 draw.to_frame(app, frame).unwrap();
                 game_state.draw_game(app, frame, egui, texture_map);
                 egui.draw_to_frame(frame).unwrap();
             }
             _ => {
                 let draw = app.draw();
-                draw.background().color(nannou::color::named::BLUE);
+                draw.background().color(MENU_BACKGROUND);
                 draw.to_frame(app, frame).unwrap();
                 egui.draw_to_frame(frame).unwrap();
             }
@@ -192,12 +194,12 @@ impl MenuState {
                         key_map.insert(Key::S, Action::Down);
                         key_map.insert(Key::D, Action::Right);
 
-ctx.input(|input_state| {
-                        key_map
-                            .iter()
-                            .filter(|(&k, _)| input_state.key_down(k))
-                            .for_each(|(_, action)| action.perform(state));
-});
+                        ctx.input(|input_state| {
+                            key_map
+                                .iter()
+                                .filter(|(&k, _)| input_state.key_down(k))
+                                .for_each(|(_, action)| action.perform(state));
+                        });
 
                         state.handle_input();
 

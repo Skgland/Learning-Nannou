@@ -1,6 +1,7 @@
 use derive_macros::{Bounded, Enumerable};
 use derive_macros_helpers::{Bounded, Enumerable};
 use learning_conrod_core::gui::{load_textures, Application, TextureMap};
+use learning_conrod_game::game::color::{IN_GAME_BACKGROUND, MENU_BACKGROUND};
 use learning_conrod_game::game::{LevelTemplate, TileTextureIndex};
 use learning_conrod_game::GameApp;
 use nannou::prelude::*;
@@ -51,7 +52,7 @@ impl EditorState {
         match self {
             EditorState::Editor(_, None) => {
                 let draw = app.draw();
-                draw.background().color(nannou::color::named::RED);
+                draw.background().color(MENU_BACKGROUND);
                 draw.to_frame(app, frame).unwrap();
 
                 //TOD draw editor content
@@ -61,7 +62,7 @@ impl EditorState {
             }
             _ => {
                 let draw = app.draw();
-                draw.background().color(nannou::color::named::BLUE);
+                draw.background().color(IN_GAME_BACKGROUND);
                 draw.to_frame(app, frame).unwrap();
             }
         }

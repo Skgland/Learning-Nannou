@@ -9,6 +9,8 @@ use log::{error, trace};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use super::color::MISSING_TEXTURE;
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LevelTemplate {
     pub name: String,
@@ -254,7 +256,7 @@ impl TileType {
                 draw.rect()
                     .x_y(x, y)
                     .w_h(TILE_SIZE, TILE_SIZE)
-                    .color(nannou::color::named::RED);
+                    .color(MISSING_TEXTURE);
             }
         }
     }

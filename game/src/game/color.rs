@@ -1,8 +1,8 @@
-pub type Color = [f32; 4];
+use nannou::color::{BLACK, PINK, PURPLE, RED};
 
-pub const BLACK: Color = [0.0, 0.0, 0.0, 1.0];
-pub const GREEN: Color = [0.0, 1.0, 0.0, 1.0];
-pub const YELLOW: Color = [1.0, 1.0, 0.0, 1.0];
-pub const BLUE: Color = [0.0, 0.0, 1.0, 1.0];
-pub const RED: Color = [1.0, 0.0, 0.0, 1.0];
-pub const D_RED: Color = [0.227, 0.513, 0.678, 1.0];
+pub type Color = nannou::color::Rgb8;
+
+pub const MISSING_TEXTURE: Color = PURPLE;
+pub const IN_GAME_BACKGROUND: Color = BLACK;
+pub const MENU_BACKGROUND: Color = PINK;
+pub const PLAYER_COLOR: Color = RED;

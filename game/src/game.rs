@@ -1,3 +1,4 @@
+use color::PLAYER_COLOR;
 pub use level::*;
 use nannou::prelude::*;
 use nannou_egui::Egui;
@@ -104,8 +105,6 @@ impl GameState {
                     tile.draw_tile(&draw, texture_map, coord, self);
                 }
 
-                // Draw a box rotating around the middle of the screen.
-
                 self.draw_player(&draw, texture_map);
 
                 draw.to_frame(app, frame).unwrap();
@@ -122,7 +121,7 @@ impl GameState {
                 .rotate(*rotation)
                 .x_y(-PLAYER_SIZE / 2.0, -PLAYER_SIZE / 2.0)
                 .w_h(PLAYER_SIZE, PLAYER_SIZE)
-                .color(nannou::color::named::RED);
+                .color(PLAYER_COLOR);
         }
     }
 }
