@@ -1,3 +1,3 @@
-# Learning-Conrod
+# Learning-Nannou
 
-Me trying to familiarise myself with the rust conrod library
+Me trying to familiarise myself with the rust nannou library
