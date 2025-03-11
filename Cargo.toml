@@ -20,7 +20,7 @@ license = "Apache-2.0 OR MIT"
 
 derive_macros = { path = "./derive_macros" }
 derive_macros_helpers = { path = "./derive_macros_helpers" }
-env_logger = "0.11.6"
+env_logger = "0.11.7"
 find_folder = "0.3.0"
 learning_conrod_core = { path = "./core" }
 learning_conrod_editor = { path = "./editor" }
